@@ -25,6 +25,7 @@ La red Docker interna se llama `poc-university-network`. Los inicializadores cre
 - Docker Compose v2.
 - GNU Make.
 - `curl` para las comprobaciones de salud.
+- `jq` para automatizaciones locales de la API de Dremio.
 
 ## Inicio rápido
 
@@ -41,6 +42,15 @@ make seed-verify
 ## Exploración de datos
 
 Después de cargar los datos, ejecuta `make gui` y abre http://localhost:3000. DbGate presenta las conexiones **Moodle (solo lectura)** y **ERP (solo lectura)** para explorar tablas, relaciones y resultados SQL. El puerto está restringido a `localhost`; las conexiones usan el usuario local `lab_viewer`, limitado a consultas.
+
+## Federación en Dremio
+
+Dremio incluye los sources transaccionales `Moodle_Postgres` y `ERP_MSSQL`, configurados con `lab_viewer` y, por tanto, solo lectura. En el editor SQL de Dremio se pueden consultar, por ejemplo:
+
+```sql
+SELECT COUNT(*) FROM "Moodle_Postgres".moodle.courses;
+SELECT COUNT(*) FROM "ERP_MSSQL".erp.sales_invoice;
+```
 
 Consulta las URL y credenciales de desarrollo en [CREDENCIALES.md](CREDENCIALES.md). Dremio solicita crear su cuenta administradora en el primer acceso.
 
