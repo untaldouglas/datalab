@@ -41,7 +41,7 @@ make seed-verify
 
 ## Exploración de datos
 
-Después de cargar los datos, ejecuta `make gui` y abre http://localhost:3000. DbGate presenta las conexiones **Moodle (solo lectura)** y **ERP (solo lectura)** para explorar tablas, relaciones y resultados SQL. El puerto está restringido a `localhost`; las conexiones usan el usuario local `lab_viewer`, limitado a consultas.
+Después de cargar los datos, ejecuta `make gui` y abre http://localhost:3000. DbGate presenta las conexiones **Moodle**, **ERP legado MSSQL**, **SIS MSSQL** y **ERPNext PostgreSQL**, todas de solo lectura, para explorar tablas, relaciones y resultados SQL. El puerto está restringido a `localhost`; las conexiones usan el usuario local `lab_viewer`, limitado a consultas.
 
 ## Federación en Dremio
 

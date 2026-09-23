@@ -112,7 +112,7 @@ services:
     volumes:
       - dbgate_data:/root/.dbgate
     environment:
-      CONNECTIONS: moodle,erp
+      CONNECTIONS: moodle,erp_mssql,sis,erpnext_postgres
       LABEL_moodle: Moodle (solo lectura)
       SERVER_moodle: postgres-source
       PORT_moodle: 5432
@@ -120,13 +120,27 @@ services:
       USER_moodle: lab_viewer
       PASSWORD_moodle: LabViewerPassword123!
       ENGINE_moodle: postgres@dbgate-plugin-postgres
-      LABEL_erp: ERP (solo lectura)
-      SERVER_erp: mssql-source
-      PORT_erp: 1433
-      DATABASE_erp: erpnext_db
-      USER_erp: lab_viewer
-      PASSWORD_erp: LabViewerPassword123!
-      ENGINE_erp: mssql@dbgate-plugin-mssql
+      LABEL_erp_mssql: ERP legado MSSQL (solo lectura)
+      SERVER_erp_mssql: mssql-source
+      PORT_erp_mssql: 1433
+      DATABASE_erp_mssql: erpnext_db
+      USER_erp_mssql: lab_viewer
+      PASSWORD_erp_mssql: LabViewerPassword123!
+      ENGINE_erp_mssql: mssql@dbgate-plugin-mssql
+      LABEL_sis: SIS MSSQL (solo lectura)
+      SERVER_sis: mssql-source
+      PORT_sis: 1433
+      DATABASE_sis: sis_db
+      USER_sis: lab_viewer
+      PASSWORD_sis: LabViewerPassword123!
+      ENGINE_sis: mssql@dbgate-plugin-mssql
+      LABEL_erpnext_postgres: ERPNext PostgreSQL (solo lectura)
+      SERVER_erpnext_postgres: postgres-source
+      PORT_erpnext_postgres: 5432
+      DATABASE_erpnext_postgres: erpnext_db
+      USER_erpnext_postgres: lab_viewer
+      PASSWORD_erpnext_postgres: LabViewerPassword123!
+      ENGINE_erpnext_postgres: postgres@dbgate-plugin-postgres
     depends_on:
       postgres-source:
         condition: service_healthy
