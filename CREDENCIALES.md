@@ -7,6 +7,7 @@
 | PostgreSQL (Moodle) | `postgresql://localhost:5432/moodle_db` | `postgres` | `PostgresPassword123!` | Base transaccional. |
 | PostgreSQL (OpenMetadata) | `postgresql://localhost:5432/openmetadata_db` | `postgres` | `PostgresPassword123!` | Base de gobierno creada por el inicializador. |
 | SQL Server | `localhost:1433` | `sa` | `MssqlPassword123!` | Edición Developer. |
+| DbGate | http://localhost:3000 | No aplica | No aplica | Interfaz local; conexiones Moodle y ERP con `lab_viewer` (solo lectura). |
 | MinIO — consola | http://localhost:9001 | `admin` | `MinioPassword123!` | La API S3 está en http://localhost:9000. Buckets: `university-lakehouse` y `openrag-docs`. |
 | Dremio | http://localhost:9047 | Se define en el primer acceso | Se define en el primer acceso | El asistente inicial crea la cuenta administradora. |
 | OpenSearch | http://localhost:9200 | No aplica | No aplica | El plugin de seguridad está deshabilitado para este entorno local. |
@@ -19,4 +20,4 @@
 
 ## Recomendación
 
-Cambia las contraseñas de MinIO, Langflow, PostgreSQL y SQL Server antes de compartir el entorno o publicar cualquiera de sus puertos.
+Cambia las contraseñas de MinIO, Langflow, PostgreSQL, SQL Server y `lab_viewer` antes de compartir el entorno o publicar cualquiera de sus puertos.

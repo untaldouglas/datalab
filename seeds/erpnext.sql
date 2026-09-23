@@ -2,6 +2,12 @@
 -- No son una exportación ni una sustitución del esquema oficial de ERPNext.
 IF DB_ID(N'erpnext_db') IS NULL CREATE DATABASE erpnext_db;
 GO
+USE master;
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.server_principals WHERE name = N'lab_viewer')
+  CREATE LOGIN [lab_viewer] WITH PASSWORD = N'LabViewerPassword123!', CHECK_POLICY = ON;
+ALTER LOGIN [lab_viewer] WITH PASSWORD = N'LabViewerPassword123!';
+GO
 USE erpnext_db;
 GO
 IF SCHEMA_ID(N'erp') IS NULL EXEC(N'CREATE SCHEMA erp');
@@ -80,4 +86,16 @@ INSERT INTO erp.purchase_order VALUES
  (3,N'PO-2026-0003',3,'2026-03-15','2026-04-01',N'To Receive',1700);
 INSERT INTO erp.purchase_order_item VALUES
  (1,1,3,20,95,1900), (2,2,4,20,32.50,650), (3,3,5,2,850,1700);
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = N'lab_viewer')
+  CREATE USER [lab_viewer] FOR LOGIN [lab_viewer];
+IF EXISTS (
+  SELECT 1
+  FROM sys.database_role_members AS membership
+  JOIN sys.database_principals AS role_principal ON role_principal.principal_id = membership.role_principal_id
+  JOIN sys.database_principals AS member_principal ON member_principal.principal_id = membership.member_principal_id
+  WHERE role_principal.name = N'db_datareader' AND member_principal.name = N'lab_viewer'
+)
+  ALTER ROLE db_datareader DROP MEMBER [lab_viewer];
+GRANT SELECT ON SCHEMA::erp TO [lab_viewer];
 GO

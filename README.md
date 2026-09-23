@@ -10,6 +10,7 @@ Entorno local reproducible para experimentar con una plataforma de datos univers
 | --- | --- | --- |
 | Fuente transaccional | PostgreSQL / Moodle | `localhost:5432` |
 | Fuente transaccional | SQL Server | `localhost:1433` |
+| Exploración de datos | DbGate | http://localhost:3000 |
 | Lakehouse | MinIO API / consola | `localhost:9000` / http://localhost:9001 |
 | Federación | Dremio | http://localhost:9047 |
 | Búsqueda | OpenSearch | http://localhost:9200 |
@@ -36,6 +37,10 @@ make seed-verify
 ```
 
 `make seed` carga datos sintéticos e idempotentes para el ejercicio práctico: actividad académica en `moodle_db` (esquema `moodle`) y operaciones comerciales en `erpnext_db` (esquema `erp`). Los esquemas representan los dominios de Moodle y ERPNext; no sustituyen sus esquemas oficiales ni requieren las aplicaciones instaladas. Cada nueva ejecución reemplaza solamente las tablas administradas de esos esquemas sintéticos.
+
+## Exploración de datos
+
+Después de cargar los datos, ejecuta `make gui` y abre http://localhost:3000. DbGate presenta las conexiones **Moodle (solo lectura)** y **ERP (solo lectura)** para explorar tablas, relaciones y resultados SQL. El puerto está restringido a `localhost`; las conexiones usan el usuario local `lab_viewer`, limitado a consultas.
 
 Consulta las URL y credenciales de desarrollo en [CREDENCIALES.md](CREDENCIALES.md). Dremio solicita crear su cuenta administradora en el primer acceso.
 

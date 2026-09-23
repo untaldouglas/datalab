@@ -142,3 +142,15 @@ INSERT INTO forum_posts VALUES
  (4,102,14,'Caso de presupuesto','2026-02-18 18:30-06','Comparto mi supuesto de inflación.'),
  (5,103,10,'Visualizaciones','2026-03-10 09:15-06','Propongo comparar retención por cohorte.'),
  (6,103,13,'Visualizaciones','2026-03-11 20:00-06','¿Qué métrica priorizamos para riesgo académico?');
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'lab_viewer') THEN
+    CREATE ROLE lab_viewer LOGIN PASSWORD 'LabViewerPassword123!';
+  END IF;
+END
+$$;
+ALTER ROLE lab_viewer PASSWORD 'LabViewerPassword123!';
+GRANT USAGE ON SCHEMA moodle TO lab_viewer;
+GRANT SELECT ON ALL TABLES IN SCHEMA moodle TO lab_viewer;
+ALTER DEFAULT PRIVILEGES IN SCHEMA moodle GRANT SELECT ON TABLES TO lab_viewer;

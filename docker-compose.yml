@@ -14,6 +14,7 @@ networks:
 volumes:
   postgres_data:
   mssql_data:
+  dbgate_data:
   minio_data:
   dremio_data:
   opensearch_data:
@@ -79,6 +80,44 @@ services:
         condition: service_healthy
     networks:
       - poc-network
+
+  dbgate:
+    image: dbgate/dbgate:7.3.0-alpine
+    container_name: poc-dbgate
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - dbgate_data:/root/.dbgate
+    environment:
+      CONNECTIONS: moodle,erp
+      LABEL_moodle: Moodle (solo lectura)
+      SERVER_moodle: postgres-source
+      PORT_moodle: 5432
+      DATABASE_moodle: moodle_db
+      USER_moodle: lab_viewer
+      PASSWORD_moodle: LabViewerPassword123!
+      ENGINE_moodle: postgres@dbgate-plugin-postgres
+      LABEL_erp: ERP (solo lectura)
+      SERVER_erp: mssql-source
+      PORT_erp: 1433
+      DATABASE_erp: erpnext_db
+      USER_erp: lab_viewer
+      PASSWORD_erp: LabViewerPassword123!
+      ENGINE_erp: mssql@dbgate-plugin-mssql
+    depends_on:
+      postgres-source:
+        condition: service_healthy
+      mssql-source:
+        condition: service_healthy
+    networks:
+      - poc-network
+    logging: *default-logging
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # ==========================================
   # 2. CAPA DE ALMACENAMIENTO LAKEHOUSE (MinIO)

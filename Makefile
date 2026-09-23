@@ -5,7 +5,7 @@ SERVICE ?=
 
 .DEFAULT_GOAL := help
 
-.PHONY: help config pull up down restart ps logs health docs-check check db-shell shell urls seed seed-verify
+.PHONY: help config pull up down restart ps logs health docs-check check db-shell shell urls seed seed-verify gui
 
 help: ## Muestra los objetivos disponibles.
 	@awk 'BEGIN {FS = ":.*##"}; /^[a-zA-Z0-9_-]+:.*##/ {printf "%-12s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -66,6 +66,9 @@ seed-verify: ## Muestra los recuentos principales de los datos sintéticos.
 	$(COMPOSE) exec -T postgres-source psql -U postgres -d moodle_db -c "SELECT 'users' AS entity, count(*) FROM moodle.users UNION ALL SELECT 'courses', count(*) FROM moodle.courses UNION ALL SELECT 'submissions', count(*) FROM moodle.assignment_submissions;"
 	$(COMPOSE) exec -T mssql-source /opt/mssql-tools18/bin/sqlcmd -C -b -S localhost -U sa -P 'MssqlPassword123!' -d erpnext_db -Q "SELECT 'customers' AS entity, count(*) AS total FROM erp.customer UNION ALL SELECT 'invoices', count(*) FROM erp.sales_invoice UNION ALL SELECT 'purchase_orders', count(*) FROM erp.purchase_order;"
 
+gui: ## Inicia la interfaz DbGate para explorar las fuentes de solo lectura.
+	$(COMPOSE) up -d --wait dbgate
+
 shell: ## Abre una shell; requiere SERVICE=<servicio>.
 	@test -n "$(SERVICE)" || (echo 'Uso: make shell SERVICE=<servicio>' >&2; exit 2)
 	$(COMPOSE) exec $(SERVICE) /bin/sh
@@ -76,4 +79,5 @@ urls: ## Muestra las interfaces web locales.
 	  'Dremio:       http://localhost:9047' \
 	  'OpenSearch:   http://localhost:9200' \
 	  'Langflow:     http://localhost:7860' \
-	  'OpenMetadata: http://localhost:8585'
+	  'OpenMetadata: http://localhost:8585' \
+	  'DbGate:       http://localhost:3000'
