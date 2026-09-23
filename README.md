@@ -45,7 +45,7 @@ Después de cargar los datos, ejecuta `make gui` y abre http://localhost:3000. D
 
 ## Federación en Dremio
 
-Dremio incluye los sources transaccionales `Moodle_Postgres` y `ERP_MSSQL`, configurados con `lab_viewer` y, por tanto, solo lectura. En el editor SQL de Dremio se pueden consultar, por ejemplo:
+Dremio incluye los sources transaccionales `Moodle_Postgres` y `ERP_MSSQL`, configurados con `lab_viewer` y, por tanto, solo lectura. También incluye `MinIO_Lakehouse`, un source S3 compatible limitado al bucket `university-lakehouse`. En el editor SQL de Dremio se pueden consultar, por ejemplo:
 
 ```sql
 SELECT COUNT(*) FROM "Moodle_Postgres".moodle.courses;
