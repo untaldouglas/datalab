@@ -56,9 +56,29 @@ services:
       - "1433:1433"
     volumes:
       - mssql_data:/var/opt/mssql
+      - ./seeds:/seeds:ro
     networks:
       - poc-network
     logging: *default-logging
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q \"SELECT 1\" >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  seed-postgres:
+    image: postgres:16-alpine
+    profiles: ["tools"]
+    environment:
+      PGPASSWORD: "PostgresPassword123!"
+    volumes:
+      - ./seeds:/seeds:ro
+    entrypoint: ["psql", "-v", "ON_ERROR_STOP=1", "-h", "postgres-source", "-U", "postgres", "-d", "moodle_db", "-f", "/seeds/moodle.sql"]
+    depends_on:
+      postgres-source:
+        condition: service_healthy
+    networks:
+      - poc-network
 
   # ==========================================
   # 2. CAPA DE ALMACENAMIENTO LAKEHOUSE (MinIO)

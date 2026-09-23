@@ -31,7 +31,11 @@ La red Docker interna se llama `poc-university-network`. Los inicializadores cre
 make config
 make up
 make health
+make seed
+make seed-verify
 ```
+
+`make seed` carga datos sintéticos e idempotentes para el ejercicio práctico: actividad académica en `moodle_db` (esquema `moodle`) y operaciones comerciales en `erpnext_db` (esquema `erp`). Los esquemas representan los dominios de Moodle y ERPNext; no sustituyen sus esquemas oficiales ni requieren las aplicaciones instaladas. Cada nueva ejecución reemplaza solamente las tablas administradas de esos esquemas sintéticos.
 
 Consulta las URL y credenciales de desarrollo en [CREDENCIALES.md](CREDENCIALES.md). Dremio solicita crear su cuenta administradora en el primer acceso.
 

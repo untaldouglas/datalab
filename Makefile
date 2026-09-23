@@ -5,7 +5,7 @@ SERVICE ?=
 
 .DEFAULT_GOAL := help
 
-.PHONY: help config pull up down restart ps logs health docs-check check db-shell shell urls
+.PHONY: help config pull up down restart ps logs health docs-check check db-shell shell urls seed seed-verify
 
 help: ## Muestra los objetivos disponibles.
 	@awk 'BEGIN {FS = ":.*##"}; /^[a-zA-Z0-9_-]+:.*##/ {printf "%-12s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -56,6 +56,15 @@ check: config docs-check health ## Valida documentación, configuración y dispo
 
 db-shell: ## Abre psql contra la base moodle_db.
 	$(COMPOSE) exec postgres-source psql -U postgres -d moodle_db
+
+seed: ## Carga datos sintéticos Moodle y ERP en las fuentes transaccionales.
+	$(COMPOSE) run --rm seed-postgres
+	$(COMPOSE) up -d --wait mssql-source
+	$(COMPOSE) exec -T mssql-source /opt/mssql-tools18/bin/sqlcmd -C -b -S localhost -U sa -P 'MssqlPassword123!' -i /seeds/erpnext.sql
+
+seed-verify: ## Muestra los recuentos principales de los datos sintéticos.
+	$(COMPOSE) exec -T postgres-source psql -U postgres -d moodle_db -c "SELECT 'users' AS entity, count(*) FROM moodle.users UNION ALL SELECT 'courses', count(*) FROM moodle.courses UNION ALL SELECT 'submissions', count(*) FROM moodle.assignment_submissions;"
+	$(COMPOSE) exec -T mssql-source /opt/mssql-tools18/bin/sqlcmd -C -b -S localhost -U sa -P 'MssqlPassword123!' -d erpnext_db -Q "SELECT 'customers' AS entity, count(*) AS total FROM erp.customer UNION ALL SELECT 'invoices', count(*) FROM erp.sales_invoice UNION ALL SELECT 'purchase_orders', count(*) FROM erp.purchase_order;"
 
 shell: ## Abre una shell; requiere SERVICE=<servicio>.
 	@test -n "$(SERVICE)" || (echo 'Uso: make shell SERVICE=<servicio>' >&2; exit 2)
