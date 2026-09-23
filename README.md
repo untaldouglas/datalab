@@ -37,7 +37,7 @@ make seed
 make seed-verify
 ```
 
-`make seed` carga datos sintéticos e idempotentes para el ejercicio práctico: actividad académica en `moodle_db` (esquema `moodle`) y operaciones comerciales en `erpnext_db` (esquema `erp`). Los esquemas representan los dominios de Moodle y ERPNext; no sustituyen sus esquemas oficiales ni requieren las aplicaciones instaladas. Cada nueva ejecución reemplaza solamente las tablas administradas de esos esquemas sintéticos.
+`make seed` carga datos sintéticos e idempotentes para el ejercicio práctico: actividad académica en `moodle_db` (esquema `moodle`), SIS en `sis_db` (esquema `sis`) y facturación ERPNext en `erpnext_db` de PostgreSQL (esquema `erp`). SIS y ERPNext comparten `student_id`; Moodle se vincula por correo institucional. Los esquemas representan sus dominios y no sustituyen las aplicaciones oficiales. Cada nueva ejecución reemplaza solamente las tablas administradas de esos esquemas sintéticos.
 
 ## Exploración de datos
 
@@ -45,11 +45,13 @@ Después de cargar los datos, ejecuta `make gui` y abre http://localhost:3000. D
 
 ## Federación en Dremio
 
-Dremio incluye los sources transaccionales `Moodle_Postgres` y `ERP_MSSQL`, configurados con `lab_viewer` y, por tanto, solo lectura. También incluye `MinIO_Lakehouse`, un source S3 compatible limitado al bucket `university-lakehouse`. En el editor SQL de Dremio se pueden consultar, por ejemplo:
+Dremio incluye los sources transaccionales `Moodle_Postgres`, `SIS_MSSQL` y `ERPNext_Postgres`, configurados con `lab_viewer` y, por tanto, solo lectura. También incluye `MinIO_Lakehouse`, un source S3 compatible limitado al bucket `university-lakehouse`.
+
+El VDS `University_Lab.Student_360` consolida SIS, Moodle y ERPNext en una vista por estudiante con estado académico, matrícula, cuenta Moodle y facturación. En el editor SQL de Dremio se pueden consultar, por ejemplo:
 
 ```sql
 SELECT COUNT(*) FROM "Moodle_Postgres".moodle.courses;
-SELECT COUNT(*) FROM "ERP_MSSQL".erp.sales_invoice;
+SELECT * FROM "University_Lab"."Student_360";
 ```
 
 Consulta las URL y credenciales de desarrollo en [CREDENCIALES.md](CREDENCIALES.md). Dremio solicita crear su cuenta administradora en el primer acceso.

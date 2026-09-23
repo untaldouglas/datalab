@@ -59,8 +59,10 @@ db-shell: ## Abre psql contra la base moodle_db.
 
 seed: ## Carga datos sintéticos Moodle y ERP en las fuentes transaccionales.
 	$(COMPOSE) run --rm seed-postgres
+	$(COMPOSE) run --rm seed-erpnext-postgres
 	$(COMPOSE) up -d --wait mssql-source
 	$(COMPOSE) exec -T mssql-source /opt/mssql-tools18/bin/sqlcmd -C -b -S localhost -U sa -P 'MssqlPassword123!' -i /seeds/erpnext.sql
+	$(COMPOSE) exec -T mssql-source /opt/mssql-tools18/bin/sqlcmd -C -b -S localhost -U sa -P 'MssqlPassword123!' -i /seeds/sis.sql
 
 seed-verify: ## Muestra los recuentos principales de los datos sintéticos.
 	$(COMPOSE) exec -T postgres-source psql -U postgres -d moodle_db -c "SELECT 'users' AS entity, count(*) FROM moodle.users UNION ALL SELECT 'courses', count(*) FROM moodle.courses UNION ALL SELECT 'submissions', count(*) FROM moodle.assignment_submissions;"
