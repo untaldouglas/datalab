@@ -90,6 +90,8 @@ OpenMetadata 1.3 modela ownership nativo en entidades catalogables —como base,
 
 ## Dremio Federation: integración personalizada
 
+La decisión, alternativas, límites y operación se detallan en [DREMIO_OPENMETADATA.md](DREMIO_OPENMETADATA.md) y en el [ADR 0001](docs/adr/0001-dremio-customdatabase-sync.md).
+
 La imagen `openmetadata/ingestion:1.3.1` no distribuye un conector Dremio. Por ello Dremio se registra como el servicio `CustomDatabase` `Dremio_Federation`; no se lo presenta falsamente como PostgreSQL, Trino u otro protocolo incompatible.
 
 El bootstrap es idempotente y se ejecuta con `python /opt/airflow/dremio_sync/dremio_openmetadata_sync.py bootstrap`: resuelve `University_Lab.Student_360` por ruta (no por UUID), crea si faltan el servicio, base, esquema y vista, y conserva el SQL y las columnas devueltas por la API de Dremio. Su lineage valida las cuatro fuentes aprobadas: `SIS_MSSQL.sis_db.sis.students`, `SIS_MSSQL.sis_db.sis.enrollments`, `Moodle_Postgres.moodle_db.moodle.users` y `ERPNext_Postgres.erpnext_db.erp.student_invoices`.

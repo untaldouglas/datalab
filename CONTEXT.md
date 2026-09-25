@@ -26,6 +26,10 @@ _Evitar_: tabla suelta, archivo suelto
 Consulta unificada de datos que permanecen en sus sistemas de origen o almacenamiento asignado.
 _Evitar_: copia centralizada, migración de datos
 
+**Integración personalizada**:
+Adaptación mantenida por la plataforma para incorporar metadatos de una fuente que no tiene conector nativo compatible.
+_Evitar_: conector oficial, emulación de un protocolo incompatible
+
 **Catálogo de datos**:
 Inventario consultable de datasets, servicios y sus metadatos de negocio y técnicos.
 _Evitar_: listado de tablas, diccionario aislado
