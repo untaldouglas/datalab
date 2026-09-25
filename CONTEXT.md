@@ -34,6 +34,10 @@ _Evitar_: listado de tablas, diccionario aislado
 Información que describe el significado, estructura, procedencia, calidad o responsable de un activo de datos.
 _Evitar_: dato de negocio
 
+**Ingesta de metadatos**:
+Proceso programable que extrae metadatos técnicos desde una fuente y los registra en el catálogo de datos sin modificar la fuente.
+_Evitar_: carga de datos, sincronización de datos operativos
+
 **Activo de datos**:
 Recurso gobernable que la plataforma identifica, describe y pone a disposición, como un dataset, un bucket o un índice de búsqueda.
 _Evitar_: archivo sin contexto, recurso técnico anónimo
@@ -47,6 +51,10 @@ _Evitar_: servicio de aplicación, tarea manual
 **Servicio de plataforma**:
 Proceso de larga ejecución que ofrece una capacidad de datos, búsqueda, IA o gobierno dentro del entorno.
 _Evitar_: contenedor auxiliar
+
+**Ejecutor de ingestas**:
+Servicio de plataforma que despliega y ejecuta los flujos de ingesta de metadatos. En este entorno se implementa con Apache Airflow y las Managed Airflow APIs de OpenMetadata.
+_Evitar_: servidor OpenMetadata, conector manual
 
 **Stack local**:
 Conjunto completo de servicios de la iniciativa ejecutado en una sola máquina para desarrollo, demostración o integración.

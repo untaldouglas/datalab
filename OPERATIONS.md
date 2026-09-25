@@ -28,7 +28,7 @@ make up
 make check
 ```
 
-La primera ejecución puede tardar varios minutos por la descarga de imágenes y las migraciones de OpenMetadata. Un resultado correcto de `make ps` muestra MinIO y PostgreSQL como `healthy`; los trabajos `minio-create-buckets`, `postgres-init-openmetadata` y `openmetadata-migrate` terminan como `Exited (0)`.
+La primera ejecución puede tardar varios minutos por la descarga de imágenes y las migraciones de OpenMetadata y Airflow. Un resultado correcto de `make ps` muestra MinIO y PostgreSQL como `healthy`; los trabajos `minio-create-buckets`, `postgres-init-openmetadata`, `postgres-init-airflow` y `openmetadata-migrate` terminan como `Exited (0)`. El servicio `ingestion` debe quedar en ejecución antes de desplegar pipelines desde OpenMetadata.
 
 ## Diagnóstico
 
@@ -39,7 +39,7 @@ make logs SERVICES=langflow
 make health
 ```
 
-Si OpenMetadata no inicia, confirma que `openmetadata-migrate` terminó con código cero. Si MinIO aparece como no saludable, revisa su endpoint con `make health` y sus registros con `make logs SERVICES=minio`.
+Si OpenMetadata no inicia, confirma que `openmetadata-migrate` terminó con código cero. Si el alta o despliegue de una ingesta muestra el error de Managed Airflow APIs, ejecuta `make health` y consulta `make logs SERVICES=ingestion`; la URL `http://localhost:8080/api/v1/openmetadata/health` debe responder correctamente. Si MinIO aparece como no saludable, revisa su endpoint con `make health` y sus registros con `make logs SERVICES=minio`.
 
 ## Datos persistentes
 

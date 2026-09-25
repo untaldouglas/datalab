@@ -46,6 +46,8 @@ health: ## Comprueba bases y endpoints publicados.
 	$(CURL) --max-time 15 -fsS -o /dev/null http://localhost:7860/health; \
 	printf '%s\n' 'Comprobando OpenMetadata...'; \
 	$(CURL) --max-time 15 -fsS -o /dev/null http://localhost:8585/; \
+	printf '%s\n' 'Comprobando las Managed Airflow APIs...'; \
+	$(CURL) --max-time 15 -fsS -o /dev/null http://localhost:8080/api/v1/openmetadata/health; \
 	printf '%s\n' 'Todos los checks HTTP respondieron correctamente.'
 
 docs-check: ## Comprueba que existe el glosario canónico.
@@ -82,4 +84,5 @@ urls: ## Muestra las interfaces web locales.
 	  'OpenSearch:   http://localhost:9200' \
 	  'Langflow:     http://localhost:7860' \
 	  'OpenMetadata: http://localhost:8585' \
+	  'Airflow:      http://localhost:8080' \
 	  'DbGate:       http://localhost:3000'

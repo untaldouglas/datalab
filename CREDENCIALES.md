@@ -13,10 +13,11 @@
 | OpenSearch | http://localhost:9200 | No aplica | No aplica | El plugin de seguridad está deshabilitado para este entorno local. |
 | Langflow | http://localhost:7860 | `admin` | `LangflowPassword123!` | Superusuario configurado por Compose. |
 | OpenMetadata | http://localhost:8585 | `admin@open-metadata.org` | `admin` | Credenciales iniciales predeterminadas de OpenMetadata 1.3.1. |
+| Airflow de ingestas | http://localhost:8080 | `admin` | `admin` | Ejecuta los pipelines desplegados desde OpenMetadata; disponible solo en localhost. |
 
 ## Servicios auxiliares
 
-`minio-create-buckets`, `postgres-init-openmetadata` y `openmetadata-migrate` son trabajos de inicialización: se ejecutan y finalizan automáticamente; no tienen interfaz ni credenciales de acceso propias.
+`minio-create-buckets`, `postgres-init-openmetadata`, `postgres-init-airflow` y `openmetadata-migrate` son trabajos de inicialización: se ejecutan y finalizan automáticamente; no tienen interfaz ni credenciales de acceso propias.
 
 ## Recomendación
 

@@ -16,8 +16,9 @@ Entorno local reproducible para experimentar con una plataforma de datos univers
 | Búsqueda | OpenSearch | http://localhost:9200 |
 | IA / RAG | Langflow | http://localhost:7860 |
 | Gobierno | OpenMetadata | http://localhost:8585 |
+| Ejecución de ingestas | Airflow / OpenMetadata Managed APIs | http://localhost:8080 |
 
-La red Docker interna se llama `poc-university-network`. Los inicializadores crean los buckets de MinIO y la base/migraciones de OpenMetadata antes de iniciar sus dependencias.
+La red Docker interna se llama `poc-university-network`. Los inicializadores crean los buckets de MinIO y las bases de OpenMetadata y Airflow antes de iniciar sus dependencias.
 
 ## Requisitos
 
@@ -67,6 +68,10 @@ make down               # detiene y elimina contenedores/red, preserva datos
 ```
 
 Consulta [OPERATIONS.md](OPERATIONS.md) para los comandos disponibles y el procedimiento de verificación.
+
+## Ingestas de OpenMetadata
+
+La interfaz de OpenMetadata no ejecuta conectores por sí sola: delega su despliegue y ejecución en el servicio `ingestion`, que incluye Apache Airflow y las Managed Airflow APIs. Ambos componentes están fijados en la versión `1.3.1` para mantener compatibilidad. Consulta [OPENMETADATA_INGESTION.md](OPENMETADATA_INGESTION.md) antes de recrear o modificar esta integración.
 
 ## Desarrollo y contribución
 
