@@ -19,6 +19,7 @@ El archivo `docker-compose.yml` incorpora:
 - La base `airflow_db`, creada de forma idempotente por `postgres-init-airflow`.
 - Volúmenes persistentes para DAGs generados, configuración de DAGs y archivos temporales.
 - El endpoint interno `http://ingestion:8080` configurado en OpenMetadata mediante `PIPELINE_SERVICE_CLIENT_ENDPOINT`.
+- OpenSearch accesible desde OpenMetadata mediante `ELASTICSEARCH_HOST=opensearch`, `ELASTICSEARCH_PORT=9200` y `ELASTICSEARCH_SCHEME=http`. `SEARCH_TYPE=opensearch` selecciona el cliente; las variables `SEARCH_HOST`, `SEARCH_PORT` y `SEARCH_SCHEME` no configuran su conexión en esta versión.
 
 Las imágenes del servidor OpenMetadata y de ingesta deben usar exactamente la misma versión. Actualmente ambas son `1.3.1`.
 
@@ -40,6 +41,8 @@ Las imágenes del servidor OpenMetadata y de ingesta deben usar exactamente la m
 Airflow se publica exclusivamente en `127.0.0.1:8080`. Sus credenciales son de desarrollo y están registradas en `CREDENCIALES.md`; deben sustituirse antes de compartir el entorno. Moodle sigue utilizando `lab_viewer`, limitado a lectura.
 
 No cambies `SERVER_HOST_API_URL` por `localhost` mientras el ejecutor esté en Docker: desde el contenedor `ingestion`, `localhost` se refiere al propio contenedor y no al servidor OpenMetadata.
+
+Por el mismo motivo, no uses `localhost` para la conexión de OpenSearch en `openmetadata-server` ni en `openmetadata-migrate`: desde esos contenedores debe resolverse como `opensearch`. Si Explore muestra el catálogo vacío y los logs de **Search Indexing** indican `Connection refused`, verifica esas variables, reinicia OpenMetadata y ejecuta **Run** en **Applications → Search Indexing** para reconstruir los índices.
 
 ## Pipelines iniciales transaccionales
 

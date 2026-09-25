@@ -323,9 +323,9 @@ services:
       DB_USER_PASSWORD: "PostgresPassword123!"
       OM_DATABASE: "openmetadata_db"
       SEARCH_TYPE: "opensearch"
-      SEARCH_HOST: "opensearch"
-      SEARCH_PORT: "9200"
-      SEARCH_SCHEME: "http"
+      ELASTICSEARCH_HOST: "opensearch"
+      ELASTICSEARCH_PORT: "9200"
+      ELASTICSEARCH_SCHEME: "http"
     depends_on:
       postgres-init-openmetadata:
         condition: service_completed_successfully
@@ -357,9 +357,9 @@ services:
       DB_USER_PASSWORD: "PostgresPassword123!"
       OM_DATABASE: "openmetadata_db"
       SEARCH_TYPE: "opensearch"
-      SEARCH_HOST: "opensearch"
-      SEARCH_PORT: "9200"
-      SEARCH_SCHEME: "http"
+      ELASTICSEARCH_HOST: "opensearch"
+      ELASTICSEARCH_PORT: "9200"
+      ELASTICSEARCH_SCHEME: "http"
     ports:
       - "8585:8585"
     depends_on:
