@@ -41,8 +41,15 @@ Airflow se publica exclusivamente en `127.0.0.1:8080`. Sus credenciales son de d
 
 No cambies `SERVER_HOST_API_URL` por `localhost` mientras el ejecutor esté en Docker: desde el contenedor `ingestion`, `localhost` se refiere al propio contenedor y no al servidor OpenMetadata.
 
-## Pipeline inicial de Moodle
+## Pipelines iniciales transaccionales
 
-El pipeline `Moodle_Postgres_metadata` cataloga el esquema `moodle`. Está habilitado, usa la cuenta de solo lectura `lab_viewer` y se programa a las 02:00 de `America/El_Salvador`. Una ejecución manual inicial debe finalizar en `success` antes de depender de la programación diaria.
+Cada fuente transaccional tiene una conexión de solo lectura con `lab_viewer`, un pipeline de metadatos habilitado y una primera ejecución manual que debe finalizar en `success` antes de depender de la programación diaria.
 
-Si el pipeline fue creado antes de añadir `ingestion`, aparecerá como `deployed: false`. No hay que recrear la conexión de Moodle: desde la pestaña **Ingestions** del servicio `Moodle_Postgres`, selecciona el pipeline, pulsa **Deploy** y después **Run**. La ingesta solo lee Moodle; el resultado se almacena en el catálogo de OpenMetadata.
+| Servicio | Pipeline | Esquema | Horario (`America/El_Salvador`) |
+| --- | --- | --- | --- |
+| `Moodle_Postgres` | `Moodle_Postgres_metadata` | `moodle` | 02:00 |
+| `ERP_MSSQL` | `ERP_MSSQL_metadata` | `erp` | 02:05 |
+| `SIS_MSSQL` | `SIS_MSSQL_metadata` | `sis` | 02:10 |
+| `ERPNext_Postgres` | `ERPNext_Postgres_metadata` | `erp` | 02:15 |
+
+Si un pipeline fue creado antes de añadir `ingestion`, aparecerá como `deployed: false`. No hay que recrear la conexión de la fuente: desde la pestaña **Ingestions** del servicio correspondiente, selecciona el pipeline, pulsa **Deploy** y después **Run**. La ingesta solo lee la fuente; el resultado se almacena en el catálogo de OpenMetadata.
