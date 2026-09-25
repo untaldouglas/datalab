@@ -391,6 +391,10 @@ services:
       DB_SCHEME: "postgresql+psycopg2"
       DB_USER: "postgres"
       DB_PASSWORD: "PostgresPassword123!"
+      DREMIO_HOST: "http://dremio:9047"
+      DREMIO_USERNAME: "matias"
+      DREMIO_PASSWORD: "matias123"
+      OPENMETADATA_API_URL: "http://openmetadata-server:8585/api/v1"
     entrypoint: /bin/bash
     command: ["/opt/airflow/ingestion_dependency.sh"]
     ports:
@@ -399,6 +403,8 @@ services:
       - airflow_data:/opt/airflow/dag_generated_configs
       - airflow_dags:/opt/airflow/dags
       - airflow_tmp:/tmp
+      - ./dags/dremio_openmetadata.py:/opt/airflow/dags/dremio_openmetadata.py:ro
+      - ./scripts:/opt/airflow/dremio_sync:ro
     healthcheck:
       test: ["CMD-SHELL", "curl --max-time 5 -fsS http://localhost:8080/api/v1/openmetadata/health >/dev/null"]
       interval: 15s

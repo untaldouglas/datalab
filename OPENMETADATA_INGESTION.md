@@ -87,3 +87,18 @@ Se completó la documentación de los activos transaccionales actualmente catalo
 `admin` es el owner operativo temporal porque es la única cuenta administradora disponible en este entorno. En producción debe sustituirse por equipos o usuarios responsables de negocio (por ejemplo, Académica, Finanzas o TI) mediante la pestaña **Ownership** de cada base, esquema o tabla.
 
 OpenMetadata 1.3 modela ownership nativo en entidades catalogables —como base, esquema y tabla—, no dentro de la definición individual de columna. Por ello, cada atributo se gobierna bajo el owner de su tabla; una excepción a esa responsabilidad debe documentarse como una regla de gobierno o modelarse con una propiedad personalizada aprobada, no simulando un owner nativo inexistente.
+
+## Dremio Federation: integración personalizada
+
+La imagen `openmetadata/ingestion:1.3.1` no distribuye un conector Dremio. Por ello Dremio se registra como el servicio `CustomDatabase` `Dremio_Federation`; no se lo presenta falsamente como PostgreSQL, Trino u otro protocolo incompatible.
+
+El bootstrap es idempotente y se ejecuta con `python /opt/airflow/dremio_sync/dremio_openmetadata_sync.py bootstrap`: resuelve `University_Lab.Student_360` por ruta (no por UUID), crea si faltan el servicio, base, esquema y vista, y conserva el SQL y las columnas devueltas por la API de Dremio. Su lineage valida las cuatro fuentes aprobadas: `SIS_MSSQL.sis_db.sis.students`, `SIS_MSSQL.sis_db.sis.enrollments`, `Moodle_Postgres.moodle_db.moodle.users` y `ERPNext_Postgres.erpnext_db.erp.student_invoices`.
+
+Los DAGs personalizados, versionados en `dags/dremio_openmetadata.py`, se montan en el servicio `ingestion` y utilizan `scripts/dremio_openmetadata_sync.py`:
+
+| DAG | Horario (`America/El_Salvador`) | Acción |
+| --- | --- | --- |
+| `Dremio_Federation_lineage` | 04:30 | Lee la definición SQL de `Student_360` y publica/actualiza sus cuatro dependencias. |
+| `Dremio_Federation_usage` | 04:45 | Consulta `sys.jobs_recent`, calcula el delta diario de consultas a `Student_360` y lo publica en Usage de OpenMetadata. |
+
+El pipeline de usage filtra `sys.jobs_recent` por el día de `America/El_Salvador`, compara el conteo con el ya registrado para esa misma fecha y publica solo la diferencia. Las credenciales de desarrollo de Dremio se inyectan únicamente en el contenedor `ingestion`; antes de una reimplementación compartida deben sustituirse por una cuenta de servicio con acceso de lectura al catálogo y a `sys.jobs_recent`. El sincronizador local obtiene el JWT de `ingestion-bot` desde PostgreSQL; en producción debe reemplazarse por un secreto de Airflow con un token de alcance mínimo, sin acceso de superusuario a la base de OpenMetadata.
