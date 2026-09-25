@@ -1,0 +1,17 @@
+{
+  "apiVersion": "catalog.university.local/custom-v1alpha1",
+  "kind": "CustomCatalogSource",
+  "metadata": {"name": "dremio-federation", "owner": "admin", "description": "Capa Dremio federada que publica la vista Student_360 para identidad académica, matrícula, Moodle y facturación."},
+  "spec": {
+    "environment": "local",
+    "service": {"name": "Dremio_Federation", "type": "CustomDatabase", "database": "Dremio", "includeSchemas": ["University_Lab"]},
+    "access": {"credentialsRef": "airflow-secret://openmetadata/dremio-reader", "mode": "read-only"},
+    "capabilities": {"nativeMetadataIngestion": false, "metadataBootstrap": true, "profiler": false, "quality": false, "lineage": true, "usage": true},
+    "operations": [
+      {"name": "bootstrap", "trigger": "on-demand", "implementation": "custom-script"},
+      {"name": "lineage", "trigger": "scheduled", "schedule": "30 4 * * *", "timezone": "America/El_Salvador", "implementation": "custom-airflow"},
+      {"name": "usage", "trigger": "scheduled", "schedule": "45 4 * * *", "timezone": "America/El_Salvador", "implementation": "custom-airflow"}
+    ],
+    "governance": {"defaultOwner": "admin", "classification": "restricted"}
+  }
+}

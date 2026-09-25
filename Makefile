@@ -56,6 +56,7 @@ docs-check: ## Comprueba que existe el glosario canónico.
 
 metadata-schema: ## Comprueba la sintaxis del esquema JSON Schema.
 	python3 -m json.tool catalog/schemas/catalog-source-v1alpha1.schema.json >/dev/null
+	python3 -m json.tool catalog/schemas/custom-catalog-source-v1alpha1.schema.json >/dev/null
 
 metadata-validate: ## Valida los manifiestos declarativos del catálogo.
 	python3 scripts/validate_catalog_manifests.py catalog/sources

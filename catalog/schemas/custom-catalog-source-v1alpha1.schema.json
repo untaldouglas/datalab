@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://university-data-lab.local/schemas/custom-catalog-source-v1alpha1.schema.json",
+  "title": "CustomCatalogSource",
+  "description": "Contrato declarativo para una fuente gobernada mediante una integración personalizada.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": {"const": "catalog.university.local/custom-v1alpha1"},
+    "kind": {"const": "CustomCatalogSource"},
+    "metadata": {
+      "type": "object", "additionalProperties": false,
+      "required": ["name", "owner", "description"],
+      "properties": {
+        "name": {"type": "string", "pattern": "^[a-z][a-z0-9-]{2,62}$"},
+        "owner": {"type": "string", "minLength": 1},
+        "description": {"type": "string", "minLength": 20}
+      }
+    },
+    "spec": {
+      "type": "object", "additionalProperties": false,
+      "required": ["environment", "service", "access", "capabilities", "operations", "governance"],
+      "properties": {
+        "environment": {"type": "string", "enum": ["local", "development", "test", "staging", "production"]},
+        "service": {
+          "type": "object", "additionalProperties": false,
+          "required": ["name", "type", "database", "includeSchemas"],
+          "properties": {
+            "name": {"type": "string", "minLength": 1},
+            "type": {"const": "CustomDatabase"},
+            "database": {"type": "string", "minLength": 1},
+            "includeSchemas": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+          }
+        },
+        "access": {
+          "type": "object", "additionalProperties": false,
+          "required": ["credentialsRef", "mode"],
+          "properties": {
+            "credentialsRef": {"type": "string", "pattern": "^(openbao|sops|airflow-secret)://[^/\\s]+/[^\\s]+$"},
+            "mode": {"const": "read-only"}
+          }
+        },
+        "capabilities": {
+          "type": "object", "additionalProperties": false,
+          "required": ["nativeMetadataIngestion", "metadataBootstrap", "profiler", "quality", "lineage", "usage"],
+          "properties": {
+            "nativeMetadataIngestion": {"type": "boolean"}, "metadataBootstrap": {"type": "boolean"},
+            "profiler": {"type": "boolean"}, "quality": {"type": "boolean"},
+            "lineage": {"type": "boolean"}, "usage": {"type": "boolean"}
+          }
+        },
+        "operations": {
+          "type": "array", "minItems": 1,
+          "items": {"$ref": "#/$defs/operation"}
+        },
+        "governance": {
+          "type": "object", "additionalProperties": false,
+          "required": ["defaultOwner", "classification"],
+          "properties": {
+            "defaultOwner": {"type": "string", "minLength": 1},
+            "classification": {"type": "string", "enum": ["internal", "confidential", "restricted"]}
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "operation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["name", "trigger", "implementation"],
+      "properties": {
+        "name": {"type": "string", "enum": ["bootstrap", "lineage", "usage"]},
+        "trigger": {"type": "string", "enum": ["on-demand", "scheduled"]},
+        "schedule": {"type": "string", "pattern": "^\\S+ \\S+ \\S+ \\S+ \\S+$"},
+        "timezone": {"const": "America/El_Salvador"},
+        "implementation": {"type": "string", "enum": ["custom-airflow", "custom-script"]}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"trigger": {"const": "scheduled"}}},
+          "then": {"required": ["schedule", "timezone"]},
+          "else": {
+            "not": {
+              "anyOf": [
+                {"required": ["schedule"]},
+                {"required": ["timezone"]}
+              ]
+            }
+          }
+        },
+        {
+          "if": {"properties": {"name": {"const": "bootstrap"}}},
+          "then": {"properties": {"trigger": {"const": "on-demand"}, "implementation": {"const": "custom-script"}}}
+        },
+        {
+          "if": {"properties": {"name": {"enum": ["lineage", "usage"]}}},
+          "then": {"properties": {"trigger": {"const": "scheduled"}, "implementation": {"const": "custom-airflow"}}}
+        }
+      ]
+    }
+  }
+}

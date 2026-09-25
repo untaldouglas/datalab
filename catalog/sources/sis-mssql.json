@@ -1,0 +1,16 @@
+{
+  "apiVersion": "catalog.university.local/v1alpha1",
+  "kind": "CatalogSource",
+  "metadata": {"name": "sis-mssql", "owner": "admin", "description": "Sistema de información estudiantil con estudiantes, matrícula y datos académicos operativos."},
+  "spec": {
+    "environment": "local",
+    "service": {"name": "SIS_MSSQL", "type": "MSSQL", "database": "sis_db", "includeSchemas": ["sis"]},
+    "access": {"credentialsRef": "airflow-secret://openmetadata/sis-mssql-reader", "mode": "read-only"},
+    "ingestion": {
+      "metadata": {"enabled": true, "schedule": "10 2 * * *", "timezone": "America/El_Salvador"},
+      "profiler": {"enabled": true, "schedule": "10 3 * * *", "timezone": "America/El_Salvador", "generateSampleData": false},
+      "quality": {"enabled": true, "schedule": "0 4 * * *", "timezone": "America/El_Salvador", "initialTests": ["row_count_positive"]}
+    },
+    "governance": {"defaultOwner": "admin", "classification": "restricted"}
+  }
+}

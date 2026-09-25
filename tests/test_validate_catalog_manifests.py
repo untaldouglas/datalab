@@ -8,6 +8,7 @@ from scripts.validate_catalog_manifests import validate_manifest
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "catalog" / "sources" / "moodle-postgres.json"
+CUSTOM_MANIFEST = ROOT / "catalog" / "sources" / "dremio-federation.json"
 
 
 class CatalogManifestValidationTest(unittest.TestCase):
@@ -65,3 +66,48 @@ class CatalogManifestValidationTest(unittest.TestCase):
         invalid["spec"]["ingestion"]["profiler"]["generateSampleData"] = True
         errors = validate_manifest(invalid, MANIFEST)
         self.assertTrue(any("generateSampleData" in error for error in errors))
+
+    def test_custom_reference_manifest_is_valid(self):
+        document = json.loads(CUSTOM_MANIFEST.read_text(encoding="utf-8"))
+        self.assertEqual([], validate_manifest(document, CUSTOM_MANIFEST))
+
+    def test_custom_source_rejects_invented_operations(self):
+        document = json.loads(CUSTOM_MANIFEST.read_text(encoding="utf-8"))
+        invalid = copy.deepcopy(document)
+        invalid["spec"]["operations"].append(
+            {"name": "profiler", "trigger": "scheduled", "schedule": "0 3 * * *", "timezone": "America/El_Salvador", "implementation": "custom-airflow"}
+        )
+        errors = validate_manifest(invalid, CUSTOM_MANIFEST)
+        self.assertTrue(any("operación soportada" in error for error in errors))
+
+    def test_custom_scheduled_operation_requires_schedule_and_timezone(self):
+        document = json.loads(CUSTOM_MANIFEST.read_text(encoding="utf-8"))
+        invalid = copy.deepcopy(document)
+        invalid["spec"]["operations"][1].pop("schedule")
+        invalid["spec"]["operations"][1].pop("timezone")
+        errors = validate_manifest(invalid, CUSTOM_MANIFEST)
+        self.assertTrue(any("schedule debe ser cron válido" in error for error in errors))
+        self.assertTrue(any("timezone debe ser America/El_Salvador" in error for error in errors))
+
+    def test_custom_on_demand_operation_rejects_schedule(self):
+        document = json.loads(CUSTOM_MANIFEST.read_text(encoding="utf-8"))
+        invalid = copy.deepcopy(document)
+        invalid["spec"]["operations"][0]["schedule"] = "0 0 * * *"
+        errors = validate_manifest(invalid, CUSTOM_MANIFEST)
+        self.assertTrue(any("on-demand no debe declarar" in error for error in errors))
+
+    def test_custom_source_rejects_drift_from_current_capabilities_and_bootstrap(self):
+        document = json.loads(CUSTOM_MANIFEST.read_text(encoding="utf-8"))
+        invalid = copy.deepcopy(document)
+        invalid["spec"]["capabilities"]["profiler"] = True
+        invalid["spec"]["operations"][0]["implementation"] = "custom-airflow"
+        errors = validate_manifest(invalid, CUSTOM_MANIFEST)
+        self.assertTrue(any("capacidades actuales" in error for error in errors))
+        self.assertTrue(any("operación personalizada soportada" in error for error in errors))
+
+    def test_custom_source_requires_all_six_capabilities(self):
+        document = json.loads(CUSTOM_MANIFEST.read_text(encoding="utf-8"))
+        invalid = copy.deepcopy(document)
+        invalid["spec"]["capabilities"].pop("usage")
+        errors = validate_manifest(invalid, CUSTOM_MANIFEST)
+        self.assertTrue(any("seis capacidades booleanas" in error for error in errors))

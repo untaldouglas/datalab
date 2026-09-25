@@ -11,6 +11,7 @@ from typing import Any
 
 
 ROOT_REQUIRED = {"apiVersion", "kind", "metadata", "spec"}
+CUSTOM_API_VERSION = "catalog.university.local/custom-v1alpha1"
 FORBIDDEN_KEY = re.compile(
     r"(?:password|passwd|token|private.?key|secret|api.?key|authorization|connection.?string|credential)s?$",
     re.IGNORECASE,
@@ -25,6 +26,9 @@ ALLOWED = {
     "profiler": {"enabled", "schedule", "timezone", "generateSampleData"},
     "quality": {"enabled", "schedule", "timezone", "initialTests"},
     "governance": {"defaultOwner", "classification"},
+    "customSpec": {"environment", "service", "access", "capabilities", "operations", "governance"},
+    "capabilities": {"nativeMetadataIngestion", "metadataBootstrap", "profiler", "quality", "lineage", "usage"},
+    "operation": {"name", "trigger", "schedule", "timezone", "implementation"},
 }
 SERVICE_TYPES = {"Postgres", "MSSQL", "MySQL", "Oracle", "CustomDatabase"}
 CRON_RANGES = ((0, 59), (0, 23), (1, 31), (1, 12), (0, 7))
@@ -89,29 +93,10 @@ def cron_is_valid(schedule: str) -> bool:
     )
 
 
-def validate_manifest(document: Any, path: Path) -> list[str]:
-    errors: list[str] = []
-    if not isinstance(document, dict):
-        return [fail(path, "el manifiesto debe ser un objeto JSON")]
-
-    unknown = set(document) - ROOT_REQUIRED
-    missing = ROOT_REQUIRED - set(document)
-    if unknown:
-        errors.append(fail(path, f"campos de nivel superior no permitidos: {', '.join(sorted(unknown))}"))
-    if missing:
-        errors.append(fail(path, f"faltan campos requeridos: {', '.join(sorted(missing))}"))
-        return errors
-    if document["apiVersion"] != "catalog.university.local/v1alpha1":
-        errors.append(fail(path, "apiVersion no soportada"))
-    if document["kind"] != "CatalogSource":
-        errors.append(fail(path, "kind debe ser CatalogSource"))
-
-    metadata = document["metadata"]
-    spec = document["spec"]
-    if not isinstance(metadata, dict) or not isinstance(spec, dict):
-        return errors + [fail(path, "metadata y spec deben ser objetos")]
-    errors.extend(reject_unknown_fields(metadata, ALLOWED["metadata"], "metadata", path))
-    errors.extend(reject_unknown_fields(spec, ALLOWED["spec"], "spec", path))
+def validate_metadata(metadata: Any, path: Path) -> list[str]:
+    if not isinstance(metadata, dict):
+        return [fail(path, "metadata debe ser un objeto")]
+    errors = reject_unknown_fields(metadata, ALLOWED["metadata"], "metadata", path)
     for field in ("name", "owner", "description"):
         if not isinstance(metadata.get(field), str) or not metadata[field].strip():
             errors.append(fail(path, f"metadata.{field} es obligatorio"))
@@ -121,14 +106,16 @@ def validate_manifest(document: Any, path: Path) -> list[str]:
         errors.append(fail(path, "metadata.description debe tener al menos 20 caracteres"))
     if not isinstance(name, str) or not re.fullmatch(r"[a-z][a-z0-9-]{2,62}", name):
         errors.append(fail(path, "metadata.name debe usar minúsculas, números o guiones"))
+    return errors
 
+
+def validate_common_service_access_governance(spec: dict[str, Any], metadata: dict[str, Any], path: Path) -> list[str]:
+    errors: list[str] = []
     service = spec.get("service") if isinstance(spec.get("service"), dict) else {}
     access = spec.get("access") if isinstance(spec.get("access"), dict) else {}
     governance = spec.get("governance") if isinstance(spec.get("governance"), dict) else {}
-    ingestion = spec.get("ingestion") if isinstance(spec.get("ingestion"), dict) else {}
     errors.extend(reject_unknown_fields(service, ALLOWED["service"], "spec.service", path))
     errors.extend(reject_unknown_fields(access, ALLOWED["access"], "spec.access", path))
-    errors.extend(reject_unknown_fields(ingestion, ALLOWED["ingestion"], "spec.ingestion", path))
     errors.extend(reject_unknown_fields(governance, ALLOWED["governance"], "spec.governance", path))
     if spec.get("environment") not in {"local", "development", "test", "staging", "production"}:
         errors.append(fail(path, "spec.environment no es un ambiente permitido"))
@@ -148,6 +135,109 @@ def validate_manifest(document: Any, path: Path) -> list[str]:
         errors.append(fail(path, "governance.defaultOwner debe coincidir con metadata.owner"))
     if governance.get("classification") not in {"internal", "confidential", "restricted"}:
         errors.append(fail(path, "spec.governance.classification no es válida"))
+    return errors
+
+
+def validate_custom_manifest(document: dict[str, Any], path: Path) -> list[str]:
+    errors: list[str] = []
+    metadata = document["metadata"]
+    spec = document["spec"]
+    if not isinstance(metadata, dict) or not isinstance(spec, dict):
+        return [fail(path, "metadata y spec deben ser objetos")]
+    errors.extend(validate_metadata(metadata, path))
+    errors.extend(reject_unknown_fields(spec, ALLOWED["customSpec"], "spec", path))
+    errors.extend(validate_common_service_access_governance(spec, metadata, path))
+    service = spec.get("service") if isinstance(spec.get("service"), dict) else {}
+    if service.get("type") != "CustomDatabase":
+        errors.append(fail(path, "una fuente personalizada debe usar service.type CustomDatabase"))
+
+    capabilities = spec.get("capabilities") if isinstance(spec.get("capabilities"), dict) else {}
+    errors.extend(reject_unknown_fields(capabilities, ALLOWED["capabilities"], "spec.capabilities", path))
+    required_capabilities = ALLOWED["capabilities"]
+    if set(capabilities) != required_capabilities or not all(isinstance(capabilities.get(name), bool) for name in required_capabilities):
+        errors.append(fail(path, "spec.capabilities debe declarar seis capacidades booleanas"))
+
+    operations = spec.get("operations")
+    if not isinstance(operations, list) or not operations:
+        errors.append(fail(path, "spec.operations debe contener al menos una operación"))
+        return errors + ([fail(path, has_forbidden_secret(document))] if has_forbidden_secret(document) else [])
+    names: set[str] = set()
+    for index, operation in enumerate(operations):
+        location = f"spec.operations[{index}]"
+        errors.extend(reject_unknown_fields(operation, ALLOWED["operation"], location, path))
+        if not isinstance(operation, dict):
+            continue
+        name = operation.get("name")
+        trigger = operation.get("trigger")
+        if name not in {"bootstrap", "lineage", "usage"}:
+            errors.append(fail(path, f"{location}.name no es una operación soportada"))
+        elif name in names:
+            errors.append(fail(path, f"{location}.name está duplicada"))
+        else:
+            names.add(name)
+        expected_operation = {
+            "bootstrap": ("on-demand", "custom-script"),
+            "lineage": ("scheduled", "custom-airflow"),
+            "usage": ("scheduled", "custom-airflow"),
+        }.get(name)
+        if expected_operation and (trigger, operation.get("implementation")) != expected_operation:
+            errors.append(fail(path, f"{location} no representa la operación personalizada soportada"))
+        if trigger == "scheduled":
+            if not isinstance(operation.get("schedule"), str) or not cron_is_valid(operation["schedule"]):
+                errors.append(fail(path, f"{location}.schedule debe ser cron válido de cinco campos"))
+            if operation.get("timezone") != "America/El_Salvador":
+                errors.append(fail(path, f"{location}.timezone debe ser America/El_Salvador"))
+        elif trigger == "on-demand":
+            if "schedule" in operation or "timezone" in operation:
+                errors.append(fail(path, f"{location} on-demand no debe declarar schedule ni timezone"))
+        else:
+            errors.append(fail(path, f"{location}.trigger debe ser scheduled u on-demand"))
+    if not {"bootstrap", "lineage", "usage"}.issubset(names):
+        errors.append(fail(path, "spec.operations debe declarar bootstrap, lineage y usage"))
+    expected_capabilities = {
+        "nativeMetadataIngestion": False, "metadataBootstrap": True, "profiler": False,
+        "quality": False, "lineage": True, "usage": True,
+    }
+    if capabilities != expected_capabilities:
+        errors.append(fail(path, "spec.capabilities no representa las capacidades actuales de la integración personalizada"))
+    forbidden = has_forbidden_secret(document)
+    if forbidden:
+        errors.append(fail(path, forbidden))
+    return errors
+
+
+def validate_manifest(document: Any, path: Path) -> list[str]:
+    errors: list[str] = []
+    if not isinstance(document, dict):
+        return [fail(path, "el manifiesto debe ser un objeto JSON")]
+
+    unknown = set(document) - ROOT_REQUIRED
+    missing = ROOT_REQUIRED - set(document)
+    if unknown:
+        errors.append(fail(path, f"campos de nivel superior no permitidos: {', '.join(sorted(unknown))}"))
+    if missing:
+        errors.append(fail(path, f"faltan campos requeridos: {', '.join(sorted(missing))}"))
+        return errors
+    if document["apiVersion"] == CUSTOM_API_VERSION and document["kind"] == "CustomCatalogSource":
+        return errors + validate_custom_manifest(document, path)
+    if document["apiVersion"] != "catalog.university.local/v1alpha1":
+        errors.append(fail(path, "apiVersion no soportada"))
+    if document["kind"] != "CatalogSource":
+        errors.append(fail(path, "kind debe ser CatalogSource"))
+
+    metadata = document["metadata"]
+    spec = document["spec"]
+    if not isinstance(metadata, dict) or not isinstance(spec, dict):
+        return errors + [fail(path, "metadata y spec deben ser objetos")]
+    errors.extend(validate_metadata(metadata, path))
+    errors.extend(reject_unknown_fields(spec, ALLOWED["spec"], "spec", path))
+
+    service = spec.get("service") if isinstance(spec.get("service"), dict) else {}
+    access = spec.get("access") if isinstance(spec.get("access"), dict) else {}
+    governance = spec.get("governance") if isinstance(spec.get("governance"), dict) else {}
+    ingestion = spec.get("ingestion") if isinstance(spec.get("ingestion"), dict) else {}
+    errors.extend(reject_unknown_fields(ingestion, ALLOWED["ingestion"], "spec.ingestion", path))
+    errors.extend(validate_common_service_access_governance(spec, metadata, path))
 
     for pipeline in ("metadata", "profiler", "quality"):
         config = ingestion.get(pipeline) if isinstance(ingestion.get(pipeline), dict) else {}

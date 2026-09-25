@@ -17,7 +17,7 @@ Convertir el alta y la operación de fuentes de OpenMetadata en un proceso decla
 | Fase | Tarea | Entregable | Criterio de aceptación | Estado |
 | --- | --- | --- | --- | --- |
 | 1 | Contrato declarativo | Esquema, validador y manifiesto de Moodle | `make metadata-check` es exitoso; se rechazan secretos y muestreo | Completada |
-| 2 | Cobertura de fuentes existentes | Manifiestos para ERP, SIS, ERPNext y Dremio | Un manifiesto validado por fuente y comparación con catálogo | Pendiente |
+| 2 | Cobertura de fuentes existentes | Manifiestos para ERP, SIS, ERPNext y Dremio | Un manifiesto validado por fuente y comparación con catálogo | Completada |
 | 3 | Planificador | Comando `plan` que muestra cambios contra OpenMetadata | Sin mutar servicios; salida revisable en PR | Pendiente |
 | 4 | Aplicador controlado | Comando `apply` idempotente para desarrollo | Reejecución sin duplicados; ejecución con identidad dedicada | Pendiente |
 | 5 | Verificación | Comando `verify` y evidencia de conteos, owners, DQ y DAGs | Falla si falta un activo, owner o ejecución esperada | Pendiente |
@@ -62,10 +62,18 @@ Ejecutar:
 make metadata-check
 ```
 
-Este comando valida la sintaxis del esquema JSON Schema, valida el manifiesto de referencia y ejecuta ocho pruebas: aceptación del manifiesto real, rechazo de una contraseña embebida, rechazo de una API key, rechazo de campos no declarados, rechazo de cron inválido, rechazo de una referencia de secreto multilínea, manejo seguro de tipos JSON inválidos y rechazo de la generación de muestras. La salida exitosa es la evidencia mínima de entrega de esta fase.
+Este comando valida la sintaxis de ambos esquemas JSON Schema, valida los manifiestos de referencia y ejecuta catorce pruebas: aceptación de contratos relacional y personalizado, rechazo de una contraseña embebida, rechazo de una API key, rechazo de campos no declarados, rechazo de cron inválido, rechazo de una referencia de secreto multilínea, manejo seguro de tipos JSON inválidos, rechazo de la generación de muestras, validación de operaciones programadas y bajo demanda, rechazo de operaciones personalizadas inventadas, rechazo de capacidades que no existen en Dremio y rechazo de una capacidad personalizada omitida. La salida exitosa es la evidencia mínima de entrega de las fases 1 y 2.
 
 La biblioteca estándar no incorpora un validador completo de JSON Schema Draft 2020-12. Por eso el validador local implementa el contrato cerrado y sus restricciones de seguridad sin dependencias externas; el esquema se verifica sintácticamente y queda disponible para validadores compatibles en CI en la fase 6.
 
 ## Decisión técnica inicial
 
-Se usa JSON como formato inicial porque permite una validación reproducible con la biblioteca estándar de Python, sin instalar dependencias nuevas ni introducir credenciales. El esquema JSON Schema deja preparado el contrato para editores y validadores compatibles. En la fase 2 se puede añadir YAML como representación ergonómica sólo si el pipeline conserva una validación determinista equivalente.
+Se usa JSON como formato inicial porque permite una validación reproducible con la biblioteca estándar de Python, sin instalar dependencias nuevas ni introducir credenciales. El esquema JSON Schema deja preparado el contrato para editores y validadores compatibles. En una evolución posterior se puede añadir YAML como representación ergonómica sólo si el pipeline conserva una validación determinista equivalente.
+
+## Entregable de la fase 2
+
+Los manifiestos de [ERP MSSQL](../../catalog/sources/erp-mssql.json), [SIS MSSQL](../../catalog/sources/sis-mssql.json), [ERPNext PostgreSQL](../../catalog/sources/erpnext-postgres.json) y [Dremio Federation](../../catalog/sources/dremio-federation.json) completan la cobertura de las cinco fuentes existentes junto con Moodle.
+
+ERP MSSQL y ERPNext PostgreSQL conservan servicios y motores distintos aunque ambos usen el nombre lógico `erpnext_db`; no se los debe fusionar. SIS y los dos ERP quedan clasificados como `restricted` por contener matrícula, identidad, facturación u operaciones financieras. Esta es una decisión de gobierno declarativa para la POC, no una afirmación de que el tag ya exista en OpenMetadata.
+
+Dremio usa el contrato [CustomCatalogSource](../../catalog/schemas/custom-catalog-source-v1alpha1.schema.json), en vez de simular pipelines relacionales inexistentes. Distingue explícitamente la ausencia de ingesta nativa de metadatos del `metadataBootstrap` idempotente bajo demanda; éste es un script personalizado, mientras lineage y usage son DAGs personalizados. Profiler y Data Quality permanecen en sus fuentes aguas arriba. Las referencias `airflow-secret://` describen el objetivo de operación y no crean secretos ni sustituyen las credenciales de desarrollo existentes.
