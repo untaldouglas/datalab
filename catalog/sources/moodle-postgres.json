@@ -1,0 +1,45 @@
+{
+  "apiVersion": "catalog.university.local/v1alpha1",
+  "kind": "CatalogSource",
+  "metadata": {
+    "name": "moodle-postgres",
+    "owner": "admin",
+    "description": "Fuente transaccional de Moodle para actividad académica, cursos, usuarios y entregas del laboratorio universitario."
+  },
+  "spec": {
+    "environment": "local",
+    "service": {
+      "name": "Moodle_Postgres",
+      "type": "Postgres",
+      "database": "moodle_db",
+      "includeSchemas": ["moodle"]
+    },
+    "access": {
+      "credentialsRef": "airflow-secret://openmetadata/moodle-postgres-reader",
+      "mode": "read-only"
+    },
+    "ingestion": {
+      "metadata": {
+        "enabled": true,
+        "schedule": "0 2 * * *",
+        "timezone": "America/El_Salvador"
+      },
+      "profiler": {
+        "enabled": true,
+        "schedule": "0 3 * * *",
+        "timezone": "America/El_Salvador",
+        "generateSampleData": false
+      },
+      "quality": {
+        "enabled": true,
+        "schedule": "0 4 * * *",
+        "timezone": "America/El_Salvador",
+        "initialTests": ["row_count_positive"]
+      }
+    },
+    "governance": {
+      "defaultOwner": "admin",
+      "classification": "internal"
+    }
+  }
+}

@@ -25,6 +25,7 @@ La red Docker interna se llama `poc-university-network`. Los inicializadores cre
 - Docker Engine 24 o superior.
 - Docker Compose v2.
 - GNU Make.
+- Python 3.10 o superior para validar los manifiestos Metadata-as-Code.
 - `curl` para las comprobaciones de salud.
 - `jq` para automatizaciones locales de la API de Dremio.
 
@@ -72,6 +73,14 @@ Consulta [OPERATIONS.md](OPERATIONS.md) para los comandos disponibles y el proce
 ## Ingestas de OpenMetadata
 
 La interfaz de OpenMetadata no ejecuta conectores por sí sola: delega su despliegue y ejecución en el servicio `ingestion`, que incluye Apache Airflow y las Managed Airflow APIs. Ambos componentes están fijados en la versión `1.3.1` para mantener compatibilidad. Consulta [OPENMETADATA_INGESTION.md](OPENMETADATA_INGESTION.md) antes de recrear o modificar esta integración.
+
+## Automatización Metadata-as-Code
+
+La evolución de esta POC se registra en [docs/metadata-as-code/README.md](docs/metadata-as-code/README.md). El primer contrato declarativo usa manifiestos sin secretos y se valida con:
+
+```bash
+make metadata-check
+```
 
 ## Desarrollo y contribución
 

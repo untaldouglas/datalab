@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://university-data-lab.local/schemas/catalog-source-v1alpha1.schema.json",
+  "title": "CatalogSource",
+  "description": "Contrato declarativo, sin secretos, para una fuente gobernada en OpenMetadata.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": {"const": "catalog.university.local/v1alpha1"},
+    "kind": {"const": "CatalogSource"},
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "owner", "description"],
+      "properties": {
+        "name": {"type": "string", "pattern": "^[a-z][a-z0-9-]{2,62}$"},
+        "owner": {"type": "string", "minLength": 1},
+        "description": {"type": "string", "minLength": 20}
+      }
+    },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["environment", "service", "access", "ingestion", "governance"],
+      "properties": {
+        "environment": {"type": "string", "enum": ["local", "development", "test", "staging", "production"]},
+        "service": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "type", "database", "includeSchemas"],
+          "properties": {
+            "name": {"type": "string", "minLength": 1},
+            "type": {"type": "string", "enum": ["Postgres", "MSSQL", "MySQL", "Oracle", "CustomDatabase"]},
+            "database": {"type": "string", "minLength": 1},
+            "includeSchemas": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+          }
+        },
+        "access": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["credentialsRef", "mode"],
+          "properties": {
+            "credentialsRef": {"type": "string", "pattern": "^(openbao|sops|airflow-secret)://[^/\\s]+/[^\\s]+$"},
+            "mode": {"const": "read-only"}
+          }
+        },
+        "ingestion": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["metadata", "profiler", "quality"],
+          "properties": {
+            "metadata": {"$ref": "#/$defs/metadataPipeline"},
+            "profiler": {
+              "$ref": "#/$defs/profilerPipeline"
+            },
+            "quality": {
+              "$ref": "#/$defs/qualityPipeline"
+            }
+          }
+        },
+        "governance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["defaultOwner", "classification"],
+          "properties": {
+            "defaultOwner": {"type": "string", "minLength": 1},
+            "classification": {"type": "string", "enum": ["internal", "confidential", "restricted"]}
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "metadataPipeline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled", "schedule", "timezone"],
+      "properties": {
+        "enabled": {"const": true},
+        "schedule": {"type": "string", "pattern": "^\\S+ \\S+ \\S+ \\S+ \\S+$"},
+        "timezone": {"const": "America/El_Salvador"}
+      }
+    },
+    "profilerPipeline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled", "schedule", "timezone", "generateSampleData"],
+      "properties": {
+        "enabled": {"const": true},
+        "schedule": {"type": "string", "pattern": "^\\S+ \\S+ \\S+ \\S+ \\S+$"},
+        "timezone": {"const": "America/El_Salvador"},
+        "generateSampleData": {"const": false}
+      }
+    },
+    "qualityPipeline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled", "schedule", "timezone", "initialTests"],
+      "properties": {
+        "enabled": {"const": true},
+        "schedule": {"type": "string", "pattern": "^\\S+ \\S+ \\S+ \\S+ \\S+$"},
+        "timezone": {"const": "America/El_Salvador"},
+        "initialTests": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+      }
+    }
+  }
+}

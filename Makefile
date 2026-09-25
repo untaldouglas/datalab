@@ -5,7 +5,7 @@ SERVICE ?=
 
 .DEFAULT_GOAL := help
 
-.PHONY: help config pull up down restart ps logs health docs-check check db-shell shell urls seed seed-verify gui
+.PHONY: help config pull up down restart ps logs health docs-check metadata-schema metadata-validate metadata-test metadata-check check db-shell shell urls seed seed-verify gui
 
 help: ## Muestra los objetivos disponibles.
 	@awk 'BEGIN {FS = ":.*##"}; /^[a-zA-Z0-9_-]+:.*##/ {printf "%-12s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -54,7 +54,18 @@ docs-check: ## Comprueba que existe el glosario canónico.
 	@test -s CONTEXT.md || (echo 'Falta CONTEXT.md.' >&2; exit 1)
 	@grep -q '^# ' CONTEXT.md || (echo 'El glosario no tiene título.' >&2; exit 1)
 
-check: config docs-check health ## Valida documentación, configuración y disponibilidad del stack.
+metadata-schema: ## Comprueba la sintaxis del esquema JSON Schema.
+	python3 -m json.tool catalog/schemas/catalog-source-v1alpha1.schema.json >/dev/null
+
+metadata-validate: ## Valida los manifiestos declarativos del catálogo.
+	python3 scripts/validate_catalog_manifests.py catalog/sources
+
+metadata-test: ## Ejecuta las pruebas del validador de manifiestos.
+	python3 -m unittest discover -s tests -p 'test_*.py'
+
+metadata-check: metadata-schema metadata-validate metadata-test ## Valida esquema, manifiestos y validador.
+
+check: config docs-check metadata-check health ## Valida documentación, manifiestos, configuración y disponibilidad del stack.
 
 db-shell: ## Abre psql contra la base moodle_db.
 	$(COMPOSE) exec postgres-source psql -U postgres -d moodle_db

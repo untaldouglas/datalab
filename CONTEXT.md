@@ -38,6 +38,10 @@ _Evitar_: listado de tablas, diccionario aislado
 Información que describe el significado, estructura, procedencia, calidad o responsable de un activo de datos.
 _Evitar_: dato de negocio
 
+**Metadata-as-Code**:
+Práctica de expresar el estado deseado de fuentes, gobierno e ingestas de metadatos en manifiestos versionados, validados y revisables antes de aplicarlos.
+_Evitar_: configuración manual sin trazabilidad, secretos en archivos de catálogo
+
 **Ingesta de metadatos**:
 Proceso programable que extrae metadatos técnicos desde una fuente y los registra en el catálogo de datos sin modificar la fuente.
 _Evitar_: carga de datos, sincronización de datos operativos
