@@ -53,3 +53,34 @@ Cada fuente transaccional tiene una conexión de solo lectura con `lab_viewer`, 
 | `ERPNext_Postgres` | `ERPNext_Postgres_metadata` | `erp` | 02:15 |
 
 Si un pipeline fue creado antes de añadir `ingestion`, aparecerá como `deployed: false`. No hay que recrear la conexión de la fuente: desde la pestaña **Ingestions** del servicio correspondiente, selecciona el pipeline, pulsa **Deploy** y después **Run**. La ingesta solo lee la fuente; el resultado se almacena en el catálogo de OpenMetadata.
+
+## Perfilado y calidad de datos
+
+El catálogo transaccional se opera en tres etapas diarias y todas se ejecutan en la zona horaria `America/El_Salvador`:
+
+| Capacidad | Cobertura | Pipelines | Horario |
+| --- | --- | --- | --- |
+| Ingesta de metadatos | 4 servicios, 18 tablas | Uno por servicio | 02:00–02:15, escalonado cada 5 minutos |
+| Profiler | 4 servicios, 18 tablas | `*_profiler`, uno por servicio | 03:00–03:15, escalonado cada 5 minutos |
+| Data Quality | 18 tablas | `*_dq`, uno por tabla | 04:00 |
+
+Los cuatro pipelines de perfilado son `Moodle_Postgres_profiler`, `ERP_MSSQL_profiler`, `SIS_MSSQL_profiler` y `ERPNext_Postgres_profiler`. Calculan métricas y no generan datos de muestra (`generateSampleData: false`); esta última decisión evita exponer registros académicos o financieros en el catálogo.
+
+Cada una de las 18 tablas tiene un Test Suite ejecutable y el control inicial `row_count_positive`. El control usa la definición `tableRowCountToBeBetween` con `minValue: 1`: detecta una fuente o carga inesperadamente vacía. No constituye una regla de negocio completa; antes de usar alertas operativas se deben añadir umbrales, unicidad, completitud y reglas de dominio acordadas con el responsable del activo.
+
+La primera ejecución manual de los 4 profiler y de los 18 pipelines de Data Quality finalizó en `success`. Para validar una reimplementación desde la interfaz: abre una tabla, confirma el owner y la descripción, entra en **Profiler & Data Quality**, verifica `row_count_positive`, y abre el pipeline `*_dq` correspondiente en **Ingestions** para consultar su última ejecución.
+
+## Responsabilidad y descripciones
+
+Se completó la documentación de los activos transaccionales actualmente catalogados:
+
+| Tipo de artefacto | Total | Owner | Descripción |
+| --- | ---: | --- | --- |
+| Bases de datos | 4 | `admin` | Sí |
+| Esquemas | 4 | `admin` | Sí |
+| Tablas | 18 | `admin` | Sí |
+| Atributos/columnas | 111 | Responsabilidad de gobierno: owner de la tabla | Sí |
+
+`admin` es el owner operativo temporal porque es la única cuenta administradora disponible en este entorno. En producción debe sustituirse por equipos o usuarios responsables de negocio (por ejemplo, Académica, Finanzas o TI) mediante la pestaña **Ownership** de cada base, esquema o tabla.
+
+OpenMetadata 1.3 modela ownership nativo en entidades catalogables —como base, esquema y tabla—, no dentro de la definición individual de columna. Por ello, cada atributo se gobierna bajo el owner de su tabla; una excepción a esa responsabilidad debe documentarse como una regla de gobierno o modelarse con una propiedad personalizada aprobada, no simulando un owner nativo inexistente.

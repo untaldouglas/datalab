@@ -38,6 +38,18 @@ _Evitar_: dato de negocio
 Proceso programable que extrae metadatos técnicos desde una fuente y los registra en el catálogo de datos sin modificar la fuente.
 _Evitar_: carga de datos, sincronización de datos operativos
 
+**Perfilado de datos**:
+Proceso que calcula métricas sobre la estructura y contenido de un activo para conocer sus características, sin convertirlo en una copia analítica.
+_Evitar_: exportación de datos, muestreo sin control
+
+**Control de calidad de datos**:
+Regla ejecutable que evalúa una condición esperada de un activo de datos y registra su resultado para seguimiento.
+_Evitar_: validación manual aislada, limpieza de datos
+
+**Owner de datos**:
+Persona o equipo responsable de decidir el uso, significado y criterios de calidad de un activo catalogado.
+_Evitar_: usuario técnico que solo ejecuta una ingesta, propietario de la infraestructura
+
 **Activo de datos**:
 Recurso gobernable que la plataforma identifica, describe y pone a disposición, como un dataset, un bucket o un índice de búsqueda.
 _Evitar_: archivo sin contexto, recurso técnico anónimo
