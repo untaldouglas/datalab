@@ -8,6 +8,10 @@ Glosario canónico para la iniciativa. Estas definiciones establecen el lenguaje
 Sistema que mantiene los datos operativos originales y es la fuente de referencia de una entidad académica o administrativa.
 _Evitar_: base de datos destino, lago de datos
 
+**Fuente SaaS**:
+Servicio externo operado por un proveedor que expone datos y metadatos mediante una API, sujeto a sus propios controles de autorización, cuotas y ciclos de cambio.
+_Evitar_: base de datos local, integración sin gobierno
+
 **Lakehouse universitario**:
 Espacio de datos común que conserva información analítica y objetos compartidos por la plataforma.
 _Evitar_: data lake, repositorio de archivos

@@ -24,6 +24,23 @@ Convertir el alta y la operación de fuentes de OpenMetadata en un proceso decla
 | 6 | Gobierno en CI | Políticas OPA/Conftest y pipeline de Pull Request | Cambios no conformes no pueden fusionarse | Pendiente |
 | 7 | Secretos y operación | OpenBao/SOPS, rotación, observabilidad y runbooks | Sin secretos en Git/Compose; alertas y restauración probadas | Pendiente |
 
+## Línea de trabajo adicional: Google Classroom
+
+Google Classroom se gestionará como una fuente SaaS académica, independiente pero dependiente del contrato Metadata-as-Code de la fase 1. No se habilita extracción ni se solicitan credenciales con este plan; cualquier ejecución requiere superar los gates de privacidad, autorización y seguridad definidos en el plan específico.
+
+| Orden | Fase | Dependencia del plan general | Gate de inicio | Estado |
+| --- | --- | --- | --- | --- |
+| GC-0 | Descubrimiento y gobierno | Fase 1 completada | Owner, privacidad, alcance, campos permitidos y clasificación aprobados | Propuesta |
+| GC-1 | Diseño de acceso | Fase 7 | Proyecto institucional y modelo OAuth de mínimo privilegio aprobado | Propuesta |
+| GC-2 | Contrato declarativo SaaS | Fase 2 | Extensión versionada para recursos/scopes y referencia de secreto aprobadas | Propuesta |
+| GC-3 | Piloto de extracción | Fases 3 y 4 | Credencial de prueba y cursos no productivos disponibles | Propuesta |
+| GC-4 | Persistencia y modelado | Fases 4 y 5 | Datasets validados, sin contenido ni calificaciones | Propuesta |
+| GC-5 | Catálogo y lineage | Fase 5 | Activos documentados y lineage verificable | Propuesta |
+| GC-6 | Operación | Fases 5 y 7 | Alertas, runbook y reejecución idempotente probados | Propuesta |
+| GC-7 | Expansión por datos sensibles | Fases 6 y 7 | Aprobación explícita para matrícula, entregas o calificaciones | Propuesta |
+
+El alcance, entregables, evidencia de aceptación, riesgos y condiciones de expansión se detallan en el [plan de Google Classroom](google-classroom-plan.md).
+
 ## Entregable de la fase 1
 
 El contrato `CatalogSource` v1alpha1 representa una fuente y su operación mínima:
