@@ -36,6 +36,26 @@ _Evitar_: dato al día sin evidencia, tiempo real asumido
 Proporción o conteo agregado de registros que se enlazan entre fuentes aprobadas; no representa calidad, éxito académico ni completitud de negocio por sí sola.
 _Evitar_: indicador de desempeño, calidad total
 
+**Estudiante elegible**:
+Estudiante que ha pagado la matrícula de un servicio formativo vigente y, por tanto, está habilitado para cursarlo.
+_Evitar_: usuario creado, estudiante registrado sin pago de matrícula
+
+**Semestre académico**:
+Periodo institucional de pregrado: el semestre impar va de enero a julio y el semestre par va de agosto a diciembre.
+_Evitar_: mes calendario, periodo sin regla institucional
+
+**Facultad**:
+Unidad organizativa responsable de una serie de servicios formativos de pregrado.
+_Evitar_: programa formativo, decanato
+
+**Decanato**:
+Responsabilidad ejercida por el decano o la decana sobre una facultad.
+_Evitar_: facultad, programa formativo
+
+**Programa formativo**:
+Oferta académica vigente perteneciente a una facultad.
+_Evitar_: facultad, curso aislado
+
 ## Descubrimiento y gobierno
 
 **Federación de datos**:
