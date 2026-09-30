@@ -20,7 +20,7 @@ Convertir el alta y la operación de fuentes de OpenMetadata en un proceso decla
 | 2 | Cobertura de fuentes existentes | Manifiestos para ERP, SIS, ERPNext y Dremio | Un manifiesto validado por fuente y comparación con catálogo | Completada |
 | 3 | Planificador | Comando `make metadata-plan` que muestra cambios contra OpenMetadata | Sin mutar servicios; salida revisable en PR | Completada |
 | 4 | Aplicador controlado | Comando `make metadata-apply` idempotente para desarrollo | Reejecución sin duplicados; ejecución con identidad dedicada | Completada |
-| 5 | Verificación | Comando `verify` y evidencia de conteos, owners, DQ y DAGs | Falla si falta un activo, owner o ejecución esperada | Pendiente |
+| 5 | Verificación y punto de decisión | Comando `verify` con evidencia de inventario, owners, descripciones, DQ y DAGs; propuesta separada para gobierno de activos | Falla si falta un activo, owner o ejecución esperada; no modifica activos | Pendiente |
 | 6 | Gobierno en CI | Políticas OPA/Conftest y pipeline de Pull Request | Cambios no conformes no pueden fusionarse | Pendiente |
 | 7 | Secretos y operación | OpenBao/SOPS, rotación, observabilidad y runbooks | Sin secretos en Git/Compose; alertas y restauración probadas | Pendiente |
 
@@ -95,7 +95,7 @@ OPENMETADATA_JWT_TOKEN='token-temporal' make metadata-plan \
   METADATA_PLAN_ARGS='--api-url http://localhost:8585/api/v1 --format json'
 ```
 
-Por cada manifiesto, la salida declara `CREATE` si el servicio no existe, `NO_CHANGE` si coinciden los campos administrados, o `UPDATE` con las diferencias de `serviceType`, descripción, owner y clasificación. La clasificación se contrasta contra las etiquetas de OpenMetadata, aceptando tanto el nombre simple como un FQN terminado en la clasificación (por ejemplo, `PII.Restricted`). El alcance de bases, esquemas, programación e ingestas queda expresamente fuera de esta comparación de servicio; se incorporará al aplicador y verificador de las fases 4 y 5.
+Por cada manifiesto, la salida declara `CREATE` si el servicio no existe, `NO_CHANGE` si coinciden los campos administrados, o `UPDATE` con las diferencias de `serviceType`, descripción, owner y clasificación. La clasificación se contrasta contra las etiquetas de OpenMetadata, aceptando tanto el nombre simple como un FQN terminado en la clasificación (por ejemplo, `PII.Restricted`). El alcance de bases, esquemas, programación e ingestas queda expresamente fuera de esta comparación de servicio; se incorpora al verificador de la fase 5. No se infiere que el gobierno de un servicio ya esté aplicado a sus activos descendientes.
 
 ### Validación visual
 
@@ -114,8 +114,37 @@ OPENMETADATA_JWT_TOKEN='token-temporal' make metadata-apply \
   METADATA_APPLY_ARGS='--confirm'
 ```
 
-El aplicador conserva los tags que no pertenecen a la taxonomía administrada y sincroniza descripciones, owners y clasificación. Si falta, crea la clasificación `UniversityClassification` y sus tres etiquetas mutuamente excluyentes: `Internal`, `Confidential` y `Restricted`. El manifiesto `internal`, `confidential` o `restricted` se asocia respectivamente con una de esas etiquetas. Reejecutar el comando no duplica tags ni vuelve a parchear un servicio que ya coincide.
+El aplicador conserva los tags que no pertenecen a la taxonomía administrada y sincroniza descripciones, owners y clasificación **solamente en los Database Services**. Si falta, crea la clasificación `UniversityClassification` y sus tres etiquetas mutuamente excluyentes: `Internal`, `Confidential` y `Restricted`. El manifiesto `internal`, `confidential` o `restricted` se asocia respectivamente con una de esas etiquetas. Reejecutar el comando no duplica tags ni vuelve a parchear un servicio que ya coincide.
 
 Una fuente ausente, o una cuyo tipo de servicio no coincida, queda en estado `BLOCKED`: el aplicador no puede ni debe inventar o reemplazar la configuración de conexión ni el secreto que un servicio de OpenMetadata requiere. Esa creación o migración queda condicionada al gestor de secretos y la identidad dedicada de la fase 7.
 
-Después de aplicar, ejecuta otra vez `make metadata-plan`. El resultado esperado es `NO_CHANGE` para las fuentes existentes. En OpenMetadata, valida en **Services → Databases** la descripción, owner y etiqueta `UniversityClassification.*` de cada servicio.
+Después de aplicar, ejecuta otra vez `make metadata-plan`. El resultado esperado es `NO_CHANGE` para las fuentes existentes. En OpenMetadata, abre el detalle de cada **Database Service** y valida la descripción, owner y etiqueta `UniversityClassification.*`. La interfaz normalmente muestra sólo el nombre corto de la etiqueta, por ejemplo `Internal` en lugar de `UniversityClassification.Internal`.
+
+## Límite actual: servicios frente a Data Assets
+
+OpenMetadata muestra una jerarquía de entidades, no un único objeto por fuente:
+
+```text
+Database Service                 ← fases 3 y 4: planificado y sincronizado
+└── Database                     ← actualmente ingerido; owner y descripción existentes
+    └── Database Schema          ← actualmente ingerido; owner y descripción existentes
+        └── Table / View         ← actualmente ingerido; owner y descripción existentes
+```
+
+Las etiquetas asignadas al servicio no se copian automáticamente a `Database`, `Database Schema` ni `Table/View`. Por tanto, que Explore muestre `No Tags added` en `moodle_db` no contradice un `NO_CHANGE` del planificador: ambos resultados corresponden a niveles distintos.
+
+El inventario esperado en Explore es de cinco bases, cinco esquemas y diecinueve tablas o vistas: las cuatro fuentes transaccionales aportan cuatro bases, cuatro esquemas y dieciocho tablas; Dremio añade `Dremio.University_Lab.Student_360` como una base, un esquema y una vista federada. Los owners y las descripciones de esos activos ya existen por las ingestas; las clasificaciones de activos descendientes aún no están declaradas ni sincronizadas.
+
+## Fase 5 propuesta: verificación y punto de decisión
+
+La fase 5 comenzará con `make metadata-verify`, una comprobación de solo lectura. Producirá evidencia por nivel de entidad y fallará si se incumple alguno de estos mínimos:
+
+- existen las cinco fuentes, sus cinco bases y cinco esquemas esperados;
+- existen las dieciocho tablas transaccionales y la vista `Student_360`;
+- cada activo esperado tiene owner y descripción;
+- los cuatro pipelines de metadata, profiler y Data Quality tienen una ejecución esperada;
+- `Student_360` conserva sus cuatro dependencias de lineage aprobadas.
+
+La salida distinguirá `PASS`, `FAIL` y `OUT_OF_SCOPE`. `OUT_OF_SCOPE` cubrirá expresamente las etiquetas de bases, esquemas y tablas, para que una ausencia de clasificación no se confunda con una falla de ingesta.
+
+Con esa evidencia se hará un punto de análisis antes de mutar Data Assets. La decisión requerida será si la clasificación de un servicio debe propagarse a todos sus descendientes, si debe declararse por activo, o si algunos activos deben tener una clasificación más restrictiva. Hasta que esa política sea aprobada y declarada, ninguna automatización aplicará etiquetas a Database, Database Schema o Table/View.

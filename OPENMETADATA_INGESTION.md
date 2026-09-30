@@ -84,6 +84,8 @@ Se completó la documentación de los activos transaccionales actualmente catalo
 | Tablas | 18 | `admin` | Sí |
 | Atributos/columnas | 111 | Responsabilidad de gobierno: owner de la tabla | Sí |
 
+Estos totales cubren las cuatro fuentes transaccionales. En **Explore**, Dremio añade de forma intencional una quinta base (`Dremio`), un quinto esquema (`University_Lab`) y la vista `Student_360`; por ello la interfaz muestra cinco bases, cinco esquemas y diecinueve tablas o vistas. No es una discrepancia de ingesta.
+
 `admin` es el owner operativo temporal porque es la única cuenta administradora disponible en este entorno. En producción debe sustituirse por equipos o usuarios responsables de negocio (por ejemplo, Académica, Finanzas o TI) mediante la pestaña **Ownership** de cada base, esquema o tabla.
 
 OpenMetadata 1.3 modela ownership nativo en entidades catalogables —como base, esquema y tabla—, no dentro de la definición individual de columna. Por ello, cada atributo se gobierna bajo el owner de su tabla; una excepción a esa responsabilidad debe documentarse como una regla de gobierno o modelarse con una propiedad personalizada aprobada, no simulando un owner nativo inexistente.
