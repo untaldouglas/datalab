@@ -15,6 +15,8 @@
 | Langflow | http://localhost:7860 | `admin` | `LangflowPassword123!` | Superusuario configurado por Compose. |
 | OpenMetadata | http://localhost:8585 | `admin@open-metadata.org` | `admin` | Credenciales iniciales predeterminadas de OpenMetadata 1.3.1. |
 | Airflow de ingestas | http://localhost:8080 | `admin` | `admin` | Ejecuta los pipelines desplegados desde OpenMetadata; disponible solo en localhost. |
+| Metabase (BI) | http://localhost:3030 | `admin@datalab.local` | `MetabaseAdmin123!` | Administrador local de la capa BI; se conecta a Dremio por Flight SQL (32010). |
+| Dremio (BI) | `dremio:32010` (Flight SQL) | `metabase_reader` | `MetabaseReader123!` | Usuario de solo consulta para Metabase; consumo limitado a los espacios `Gold_*`. |
 
 ## Servicios auxiliares
 
@@ -22,4 +24,4 @@
 
 ## Recomendación
 
-Cambia las contraseñas de MinIO, Langflow, PostgreSQL, SQL Server y `lab_viewer` antes de compartir el entorno o publicar cualquiera de sus puertos.
+Cambia las contraseñas de MinIO, Langflow, PostgreSQL, SQL Server, `lab_viewer`, Metabase y `metabase_reader` antes de compartir el entorno o publicar cualquiera de sus puertos.

@@ -66,7 +66,7 @@ El servicio `metrics-gateway` lleva el código embebido en la imagen (no monta v
 
 ## Metabase
 
-`make metabase` inicia BI en `http://localhost:3030` (sólo localhost). En el primer acceso se crea la cuenta administradora local de desarrollo. Para conectar Dremio: **Admin → Databases → Add database → PostgreSQL**, con host `dremio`, puerto `31010` (wire protocol PostgreSQL de Dremio), base `Dremio` y el usuario de lectura `lab_viewer`. Restricción de gobierno: los dashboards deben construirse únicamente sobre datasets de los espacios `Gold_*`; `Silver` y las fuentes son capas internas de cálculo. En Dremio OSS esta restricción es convención documentada, no un control de acceso técnico; el control duro para consumidores externos sigue siendo el gateway (ADR 0002).
+`make metabase` inicia BI en `http://localhost:3030` (sólo localhost). Metabase se conecta a Dremio por **Arrow Flight SQL (puerto 32010)** con el driver comunitario incluido en `metabase/Dockerfile`; no uses el puerto `31010` (RPC propietario de Dremio, no es protocolo PostgreSQL). El procedimiento completo paso a paso, incluido el usuario `metabase_reader` y el tablero de Rectoría, está en [docs/metabase-setup.md](docs/metabase-setup.md). Restricción de gobierno: los dashboards se construyen únicamente sobre datasets de los espacios `Gold_*`. En Dremio OSS esta restricción es convención documentada, no un control de acceso técnico; el control duro para consumidores externos sigue siendo el gateway (ADR 0002).
 
 ## Datos persistentes
 

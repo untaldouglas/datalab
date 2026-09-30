@@ -63,7 +63,7 @@ Consulta las URL y credenciales de desarrollo en [CREDENCIALES.md](CREDENCIALES.
 
 ## BI con Metabase
 
-`make metabase` inicia Metabase en http://localhost:3030. Conéctalo a Dremio con el driver **PostgreSQL** (host `dremio`, puerto `31010`, usuario `lab_viewer`) y construye los dashboards sólo sobre los espacios `Gold_*`; consulta [OPERATIONS.md](OPERATIONS.md#metabase) para el procedimiento y sus límites de gobierno.
+`make metabase` inicia Metabase en http://localhost:3030. Se conecta a Dremio por **Arrow Flight SQL** (puerto `32010`) con el driver incluido en `metabase/Dockerfile`; los dashboards se construyen sólo sobre los espacios `Gold_*`. El guion completo de replicación está en [docs/metabase-setup.md](docs/metabase-setup.md).
 
 ## Gateway institucional de métricas
 

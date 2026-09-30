@@ -249,10 +249,11 @@ services:
     logging: *default-logging
 
   # ==========================================
-  # 3b. CAPA BI (Metabase sobre el wire protocol PostgreSQL de Dremio)
+  # 3b. CAPA BI (Metabase sobre Arrow Flight SQL de Dremio, puerto 32010)
   # ==========================================
   metabase:
-    image: metabase/metabase:v0.49.13
+    build:
+      context: ./metabase
     container_name: poc-metabase
     restart: unless-stopped
     ports:
