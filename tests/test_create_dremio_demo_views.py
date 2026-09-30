@@ -6,10 +6,12 @@ from scripts.create_dremio_demo_views import VIEW_SQL, submit_and_wait
 
 class DremioDemoViewsTest(unittest.TestCase):
     def test_views_preserve_the_approved_business_rules(self):
-        eligibility = VIEW_SQL["Eligible_Student_Activity"]
-        events = VIEW_SQL["Academic_Activity_Events"]
-        academic_summary = VIEW_SQL["Rectoral_Academic_Summary"]
+        eligibility = VIEW_SQL["Silver.Eligible_Student_Activity"]
+        events = VIEW_SQL["Silver.Academic_Activity_Events"]
+        academic_summary = VIEW_SQL["Gold_Rectoria.Rectoral_Academic_Summary"]
 
+        for view_sql in (eligibility, events, academic_summary):
+            self.assertNotIn('"University_Lab"', view_sql)
         self.assertIn("p.payment_status IN ('paid', 'partial')", eligibility)
         self.assertIn("r.registration_status = 'vigente'", eligibility)
         self.assertIn("moodle_user.role_name = 'student'", events)

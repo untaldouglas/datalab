@@ -4,7 +4,7 @@
   "metadata": {"name": "dremio-federation", "owner": "admin", "description": "Capa Dremio federada que publica la vista Student_360 para identidad académica, matrícula, Moodle y facturación."},
   "spec": {
     "environment": "local",
-    "service": {"name": "Dremio_Federation", "type": "CustomDatabase", "database": "Dremio", "includeSchemas": ["University_Lab"]},
+    "service": {"name": "Dremio_Federation", "type": "CustomDatabase", "database": "Dremio", "includeSchemas": ["University_Lab", "Silver", "Gold_Rectoria", "Gold_Decanatos", "Gold_VR_Financiera"]},
     "access": {"credentialsRef": "airflow-secret://openmetadata/dremio-reader", "mode": "read-only"},
     "capabilities": {"nativeMetadataIngestion": false, "metadataBootstrap": true, "profiler": false, "quality": false, "lineage": true, "usage": true},
     "operations": [

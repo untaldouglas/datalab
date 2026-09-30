@@ -13,7 +13,7 @@ from urllib.request import Request, urlopen
 
 METRICS = {
     "academic": {
-        "view": '"University_Lab"."Rectoral_Academic_Summary"',
+        "view": '"Gold_Rectoria"."Rectoral_Academic_Summary"',
         "columns": "academic_term, faculty, academic_program, course_code, reporting_cutoff, eligible_students, participating_students, eligible_without_recent_activity, participation_pct",
         "filters": {
             "faculty": ("faculty", {"Ingeniería", "Administración", "Economía"}),
@@ -22,7 +22,7 @@ METRICS = {
         },
     },
     "financial": {
-        "view": '"University_Lab"."Rectoral_Financial_Summary"',
+        "view": '"Gold_Rectoria"."Rectoral_Financial_Summary"',
         "columns": "academic_semester, reporting_cutoff, payment_status, invoices, billed_amount, paid_amount, outstanding_amount",
         "filters": {"status": ("payment_status", {"paid", "partial", "unpaid", "overdue"})},
     },

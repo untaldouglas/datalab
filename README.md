@@ -47,17 +47,17 @@ Después de cargar los datos, ejecuta `make gui` y abre http://localhost:3000. D
 
 ## Federación en Dremio
 
-Dremio incluye los sources transaccionales `Moodle_Postgres`, `SIS_MSSQL` y `ERPNext_Postgres`, configurados con `lab_viewer` y, por tanto, solo lectura. También incluye `MinIO_Lakehouse`, un source S3 compatible limitado al bucket `university-lakehouse`.
+Dremio incluye los sources transaccionales `Moodle_Postgres`, `SIS_MSSQL` y `ERPNext_Postgres`, configurados con `lab_viewer` y, por tanto, solo lectura, además de `MinIO_Lakehouse`, un source S3 compatible limitado al bucket `university-lakehouse`.
 
-El VDS `University_Lab.Student_360` consolida SIS, Moodle y ERPNext en una vista por estudiante con estado académico, matrícula, cuenta Moodle y facturación. En el editor SQL de Dremio se pueden consultar, por ejemplo:
+El espacio de fuentes federadas sigue la arquitectura medallion ([ADR 0003](docs/adr/0003-dremio-medallion-audience-spaces.md)): **bronce** son las fuentes registradas (`Moodle_Postgres`, `SIS_MSSQL`, `ERPNext_Postgres`, `MinIO_Lakehouse`); **plata** es el espacio `Silver` con las reglas de negocio; **oro** son los espacios por audiencia (`Gold_Rectoria`, `Gold_Decanatos`, `Gold_VR_Financiera`) con los agregados de consumo. El VDS `University_Lab.Student_360` consolida SIS, Moodle y ERPNext en una vista por estudiante con estado académico, matrícula, cuenta Moodle y facturación. En el editor SQL de Dremio se pueden consultar, por ejemplo:
 
 ```sql
 SELECT COUNT(*) FROM "Moodle_Postgres".moodle.courses;
 SELECT * FROM "University_Lab"."Student_360";
-SELECT * FROM "University_Lab"."Eligible_Student_Activity";
+SELECT * FROM "Silver"."Eligible_Student_Activity";
 ```
 
-Después de `make seed`, ejecuta `make demo-views` para crear o actualizar las vistas de consumo aprobadas. `Eligible_Student_Activity` incluye sólo matrículas vigentes con pago de matrícula `paid` o `partial`; este último se marca como elegibilidad temporal. `Rectoral_Academic_Summary` y `Rectoral_Financial_Summary` entregan agregados sin nombres ni identificadores para el tablero gerencial. La fecha de corte demostrativa se declara explícitamente en `Demo_Reporting_Cutoff` (31 de marzo de 2026), por lo que puede cambiarse de forma trazable antes de una demostración.
+Después de `make seed`, ejecuta `make demo-views` para crear los espacios y las vistas de consumo aprobadas. `Silver.Eligible_Student_Activity` incluye sólo matrículas vigentes con pago de matrícula `paid` o `partial`; este último se marca como elegibilidad temporal. `Gold_Rectoria.Rectoral_Academic_Summary` y `Gold_Rectoria.Rectoral_Financial_Summary` entregan agregados sin nombres ni identificadores para el tablero gerencial. La fecha de corte demostrativa se declara explícitamente en `Silver.Demo_Reporting_Cutoff` (31 de marzo de 2026), por lo que puede cambiarse de forma trazable antes de una demostración.
 
 Consulta las URL y credenciales de desarrollo en [CREDENCIALES.md](CREDENCIALES.md). Dremio solicita crear su cuenta administradora en el primer acceso.
 

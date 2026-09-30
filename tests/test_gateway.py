@@ -22,5 +22,5 @@ class GatewayQueryTest(unittest.TestCase):
 
     def test_only_the_two_approved_aggregate_views_are_exposed(self):
         self.assertEqual({"academic", "financial"}, set(METRICS))
-        self.assertEqual('"University_Lab"."Rectoral_Academic_Summary"', METRICS["academic"]["view"])
-        self.assertEqual('"University_Lab"."Rectoral_Financial_Summary"', METRICS["financial"]["view"])
+        self.assertEqual('"Gold_Rectoria"."Rectoral_Academic_Summary"', METRICS["academic"]["view"])
+        self.assertEqual('"Gold_Rectoria"."Rectoral_Financial_Summary"', METRICS["financial"]["view"])

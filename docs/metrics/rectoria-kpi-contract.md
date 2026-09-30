@@ -73,12 +73,12 @@ Las respuestas deben explicar que la POC opera con agregados sintéticos y que e
 
 Antes de las vistas se añadirá el modelo sintético `academic_registrations` en SIS y `registration_payments` en ERPNext. Una matrícula `vigente` con pago `paid` o `partial` permitirá cursar los servicios formativos activos asociados; `partial` se identificará como elegibilidad temporal. La fecha de fin de gracia no se inventará para la POC: antes de producción debe ser definida por la política financiera.
 
-Las vistas de consumo disponibles se crean con `make demo-views`:
+Las vistas de consumo disponibles se crean con `make demo-views` siguiendo la arquitectura medallion del [ADR 0003](../adr/0003-dremio-medallion-audience-spaces.md): reglas de negocio en `Silver`, agregados por audiencia en los espacios `Gold_*`.
 
-- `University_Lab.Eligible_Student_Activity`: capa operativa restringida a matrículas vigentes con pago `paid` o `partial`; identifica la elegibilidad temporal y agrega Facultad, Programa y Curso.
-- `University_Lab.Academic_Activity_Events`: evidencia mínima de eventos válidos (`submitted`, `finished` y publicaciones propias de estudiante). Conserva el identificador técnico únicamente para calcular agregados; no es una fuente para el dashboard ni para agentes.
-- `University_Lab.Rectoral_Academic_Summary`: resultado agregado de R-01 y R-03 por Facultad, Programa y Servicio, incluyendo elegibles, participantes y porcentaje de participación.
-- `University_Lab.Rectoral_Financial_Summary`: resultado agregado de R-05 a R-07 por semestre de emisión y estado de pago.
-- `University_Lab.Demo_Reporting_Cutoff`: fecha de corte demostrativa explícita, inicialmente `2026-03-31`. La ventana contiene los 28 días calendario con fecha estrictamente posterior a `corte - 28` e igual o anterior al corte. Cambiar esta vista cambia de forma trazable la ventana y los agregados; no se usará la fecha del servidor implícitamente.
+- `Silver.Eligible_Student_Activity`: capa operativa restringida a matrículas vigentes con pago `paid` o `partial`; identifica la elegibilidad temporal y agrega Facultad, Programa y Curso.
+- `Silver.Academic_Activity_Events`: evidencia mínima de eventos válidos (`submitted`, `finished` y publicaciones propias de estudiante). Conserva el identificador técnico únicamente para calcular agregados; no es una fuente para el dashboard ni para agentes.
+- `Silver.Demo_Reporting_Cutoff`: fecha de corte demostrativa explícita, inicialmente `2026-03-31`. La ventana contiene los 28 días calendario con fecha estrictamente posterior a `corte - 28` e igual o anterior al corte. Cambiar esta vista cambia de forma trazable la ventana y los agregados; no se usará la fecha del servidor implícitamente.
+- `Gold_Rectoria.Rectoral_Academic_Summary`: resultado agregado de R-01 y R-03 por Facultad, Programa y Servicio, incluyendo elegibles, participantes y porcentaje de participación.
+- `Gold_Rectoria.Rectoral_Financial_Summary`: resultado agregado de R-05 a R-07 por semestre de emisión y estado de pago.
 
 El resumen financiero es una foto del estado registrado en las facturas a la fecha de ejecución de la carga. La POC no contiene historial de cambios de estado ni pagos separados; por ello no reconstruye retrospectivamente el saldo de una fecha pasada. La instancia local Dremio OSS no permite comprobar grants por vista; el [ADR 0002](../adr/0002-dremio-oss-consumer-access-gate.md) bloquea la conexión de dashboard y Langflow/Hermes hasta configurar Dremio Enterprise/Cloud o un gateway de consultas permitido. Mientras tanto, `Eligible_Student_Activity` y `Academic_Activity_Events` son capas internas de cálculo y no deben compartirse.
