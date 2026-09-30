@@ -3,10 +3,11 @@ CURL ?= curl
 SERVICES ?=
 SERVICE ?=
 METADATA_PLAN_ARGS ?=
+METADATA_APPLY_ARGS ?=
 
 .DEFAULT_GOAL := help
 
-.PHONY: help config pull up down restart ps logs health docs-check metadata-schema metadata-validate metadata-test metadata-plan metadata-check check db-shell shell urls seed seed-verify gui
+.PHONY: help config pull up down restart ps logs health docs-check metadata-schema metadata-validate metadata-test metadata-plan metadata-apply metadata-check check db-shell shell urls seed seed-verify gui
 
 help: ## Muestra los objetivos disponibles.
 	@awk 'BEGIN {FS = ":.*##"}; /^[a-zA-Z0-9_-]+:.*##/ {printf "%-12s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -67,6 +68,9 @@ metadata-test: ## Ejecuta las pruebas del validador de manifiestos.
 
 metadata-plan: ## Compara manifiestos con OpenMetadata sin modificar el catálogo.
 	python3 scripts/plan_catalog.py $(METADATA_PLAN_ARGS)
+
+metadata-apply: ## Aplica cambios aprobados al catálogo; requiere METADATA_APPLY_ARGS=--confirm.
+	python3 scripts/apply_catalog.py $(METADATA_APPLY_ARGS)
 
 metadata-check: metadata-schema metadata-validate metadata-test ## Valida esquema, manifiestos y validador.
 

@@ -46,6 +46,10 @@ _Evitar_: dato de negocio
 Práctica de expresar el estado deseado de fuentes, gobierno e ingestas de metadatos en manifiestos versionados, validados y revisables antes de aplicarlos.
 _Evitar_: configuración manual sin trazabilidad, secretos en archivos de catálogo
 
+**Clasificación universitaria**:
+Taxonomía administrada `UniversityClassification` para expresar la sensibilidad de un activo de datos mediante una única etiqueta: `Internal`, `Confidential` o `Restricted`.
+_Evitar_: etiquetas de sensibilidad contradictorias, clasificación manual no versionada
+
 **Ingesta de metadatos**:
 Proceso programable que extrae metadatos técnicos desde una fuente y los registra en el catálogo de datos sin modificar la fuente.
 _Evitar_: carga de datos, sincronización de datos operativos

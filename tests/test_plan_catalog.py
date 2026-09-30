@@ -2,7 +2,9 @@ import unittest
 from io import BytesIO
 from pathlib import Path
 from unittest.mock import patch
+from urllib.error import HTTPError
 
+from scripts.apply_catalog import build_service_patch, managed_tag_fqn, request_json, service_type_matches
 from scripts.plan_catalog import build_plan, fetch_database_services, load_manifests
 
 
@@ -10,6 +12,69 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class CatalogPlanTest(unittest.TestCase):
+    def test_apply_blocks_service_type_drift_except_for_casing(self):
+        manifest = load_manifests(ROOT / "catalog" / "sources")[1]
+
+        self.assertTrue(service_type_matches(manifest, {"serviceType": "Mssql"}))
+        self.assertFalse(service_type_matches(manifest, {"serviceType": "Postgres"}))
+
+    def test_apply_request_fails_when_a_patch_target_is_missing(self):
+        error = HTTPError("http://catalog.test/service", 404, "Not found", {}, BytesIO())
+
+        with patch("scripts.apply_catalog.urlopen", side_effect=error):
+            with self.assertRaisesRegex(RuntimeError, "HTTP 404"):
+                request_json("PATCH", "http://catalog.test/service", "temporary-token", [])
+
+    def test_apply_patch_updates_description_and_adds_managed_classification(self):
+        manifest = load_manifests(ROOT / "catalog" / "sources")[0]
+        service = {
+            "description": "Descripción anterior",
+            "owner": {"id": "owner-id", "name": "admin"},
+            "tags": [{"tagFQN": "PII.Sensitive", "labelType": "Manual", "state": "Confirmed"}],
+        }
+
+        patch = build_service_patch(manifest, service, {"id": "owner-id", "type": "user", "name": "admin"})
+
+        self.assertEqual(
+            [
+                {"op": "replace", "path": "/description", "value": manifest["metadata"]["description"]},
+                {
+                    "op": "replace",
+                    "path": "/tags",
+                    "value": [
+                        {"tagFQN": "PII.Sensitive", "labelType": "Manual", "state": "Confirmed"},
+                        {"tagFQN": managed_tag_fqn(manifest), "labelType": "Manual", "state": "Confirmed"},
+                    ],
+                },
+            ],
+            patch,
+        )
+
+    def test_apply_patch_replaces_a_different_owner(self):
+        manifest = load_manifests(ROOT / "catalog" / "sources")[0]
+        service = {"description": manifest["metadata"]["description"], "owner": {"name": "legacy"}, "tags": [{"tagFQN": managed_tag_fqn(manifest)}]}
+        owner = {"id": "owner-id", "type": "user", "name": "admin"}
+
+        patch = build_service_patch(manifest, service, owner)
+
+        self.assertEqual([{"op": "replace", "path": "/owner", "value": owner}], patch)
+
+    def test_apply_replaces_another_tag_from_the_managed_classification(self):
+        manifest = load_manifests(ROOT / "catalog" / "sources")[0]
+        service = {
+            "description": manifest["metadata"]["description"],
+            "owner": {"id": "owner-id", "name": "admin"},
+            "tags": [
+                {"tagFQN": "PII.Sensitive", "labelType": "Manual", "state": "Confirmed"},
+                {"tagFQN": "UniversityClassification.Confidential", "labelType": "Manual", "state": "Confirmed"},
+                {"tagFQN": managed_tag_fqn(manifest), "labelType": "Manual", "state": "Confirmed"},
+            ],
+        }
+
+        patch = build_service_patch(manifest, service, {"id": "owner-id", "type": "user", "name": "admin"})
+
+        self.assertEqual(["PII.Sensitive", managed_tag_fqn(manifest)], [tag["tagFQN"] for tag in patch[0]["value"]])
+
     def test_matching_service_is_reported_without_changes(self):
         manifest = load_manifests(ROOT / "catalog" / "sources")[0]
         service = {

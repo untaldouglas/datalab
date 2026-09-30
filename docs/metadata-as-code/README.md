@@ -19,7 +19,7 @@ Convertir el alta y la operación de fuentes de OpenMetadata en un proceso decla
 | 1 | Contrato declarativo | Esquema, validador y manifiesto de Moodle | `make metadata-check` es exitoso; se rechazan secretos y muestreo | Completada |
 | 2 | Cobertura de fuentes existentes | Manifiestos para ERP, SIS, ERPNext y Dremio | Un manifiesto validado por fuente y comparación con catálogo | Completada |
 | 3 | Planificador | Comando `make metadata-plan` que muestra cambios contra OpenMetadata | Sin mutar servicios; salida revisable en PR | Completada |
-| 4 | Aplicador controlado | Comando `apply` idempotente para desarrollo | Reejecución sin duplicados; ejecución con identidad dedicada | Pendiente |
+| 4 | Aplicador controlado | Comando `make metadata-apply` idempotente para desarrollo | Reejecución sin duplicados; ejecución con identidad dedicada | Completada |
 | 5 | Verificación | Comando `verify` y evidencia de conteos, owners, DQ y DAGs | Falla si falta un activo, owner o ejecución esperada | Pendiente |
 | 6 | Gobierno en CI | Políticas OPA/Conftest y pipeline de Pull Request | Cambios no conformes no pueden fusionarse | Pendiente |
 | 7 | Secretos y operación | OpenBao/SOPS, rotación, observabilidad y runbooks | Sin secretos en Git/Compose; alertas y restauración probadas | Pendiente |
@@ -104,3 +104,18 @@ Por cada manifiesto, la salida declara `CREATE` si el servicio no existe, `NO_CH
 3. Para una fila `NO_CHANGE`, compara en la ficha del servicio su tipo, descripción, owner y etiquetas con el manifiesto correspondiente.
 4. Para `CREATE`, confirma que el servicio no figura en la lista. Para `UPDATE`, abre la ficha y contrasta cada campo listado bajo la fila.
 5. Recarga la página al terminar: debe permanecer idéntica. Esa ausencia de mutaciones es el criterio principal de aceptación de la fase 3.
+
+## Entregable de la fase 4
+
+`make metadata-apply` aplica únicamente los cambios de gobierno declarados y exige una confirmación explícita. Antes de usarlo, revisa la salida de `make metadata-plan`.
+
+```bash
+OPENMETADATA_JWT_TOKEN='token-temporal' make metadata-apply \
+  METADATA_APPLY_ARGS='--confirm'
+```
+
+El aplicador conserva los tags que no pertenecen a la taxonomía administrada y sincroniza descripciones, owners y clasificación. Si falta, crea la clasificación `UniversityClassification` y sus tres etiquetas mutuamente excluyentes: `Internal`, `Confidential` y `Restricted`. El manifiesto `internal`, `confidential` o `restricted` se asocia respectivamente con una de esas etiquetas. Reejecutar el comando no duplica tags ni vuelve a parchear un servicio que ya coincide.
+
+Una fuente ausente, o una cuyo tipo de servicio no coincida, queda en estado `BLOCKED`: el aplicador no puede ni debe inventar o reemplazar la configuración de conexión ni el secreto que un servicio de OpenMetadata requiere. Esa creación o migración queda condicionada al gestor de secretos y la identidad dedicada de la fase 7.
+
+Después de aplicar, ejecuta otra vez `make metadata-plan`. El resultado esperado es `NO_CHANGE` para las fuentes existentes. En OpenMetadata, valida en **Services → Databases** la descripción, owner y etiqueta `UniversityClassification.*` de cada servicio.
