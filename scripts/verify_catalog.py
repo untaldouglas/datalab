@@ -44,6 +44,7 @@ CONSUMPTION_ASSETS = {
     "Corpus_Storage.openrag_docs_corpus",
 }
 CONSUMPTION_ENDPOINTS = (("dashboards", {"Metabase_Institutional"}), ("searchIndexes", {"Corpus_Search"}), ("containers", {"Corpus_Storage"}))
+SEMANTIC_EXPECTATIONS = {"glossaryTerms": 14, "domains": 4, "pipelines": 6, "charts": 5}
 
 
 def result(status: str, control: str, detail: str) -> dict[str, str]:
@@ -88,11 +89,11 @@ def get_json(url: str, token: str) -> Any:
         raise RuntimeError(f"No se pudo consultar {url}: {error}") from error
 
 
-def fetch_entities(api_url: str, token: str, endpoint: str) -> list[dict[str, Any]]:
+def fetch_entities(api_url: str, token: str, endpoint: str, fields: str = "owner,description,tags") -> list[dict[str, Any]]:
     entities: list[dict[str, Any]] = []
     after: str | None = None
     while True:
-        params = {"limit": "100", "fields": "owner,description,tags"}
+        params = {"limit": "100", "fields": fields}
         if after:
             params["after"] = after
         payload = get_json(f"{api_url.rstrip('/')}/{endpoint}?{urlencode(params)}", token)
@@ -179,6 +180,16 @@ def verify_consumption_lineage(api_url: str, token: str) -> dict[str, str]:
     return result("PASS", "lineage-consumo", "tableros ligados a Gold y corpus ligado al bucket documental")
 
 
+def verify_semantic_governance(entities: dict[str, list[dict[str, Any]]]) -> dict[str, str]:
+    counts = {endpoint: len(entities.get(endpoint, [])) for endpoint in SEMANTIC_EXPECTATIONS}
+    missing = {endpoint: expected for endpoint, expected in SEMANTIC_EXPECTATIONS.items() if counts[endpoint] < expected}
+    if missing:
+        detail = ", ".join(f"{endpoint}: {counts[endpoint]}/{expected}" for endpoint, expected in missing.items())
+        return result("FAIL", "gobierno-semanticas", f"insuficientes: {detail}")
+    detail = ", ".join(f"{endpoint}: {counts[endpoint]}" for endpoint in SEMANTIC_EXPECTATIONS)
+    return result("PASS", "gobierno-semanticas", f"glosario, domains, pipelines y charts catalogados ({detail})")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--api-url", default=os.environ.get("OPENMETADATA_API_URL", DEFAULT_API_URL))
@@ -190,10 +201,11 @@ def main(argv: list[str] | None = None) -> int:
     if not args.token or not args.airflow_username or not args.airflow_password:
         parser.error("se requieren OPENMETADATA_JWT_TOKEN, AIRFLOW_USERNAME y AIRFLOW_PASSWORD sólo en el entorno de ejecución")
     try:
-        entities = {"services": fetch_entities(args.api_url, args.token, "services/databaseServices"), "databases": fetch_entities(args.api_url, args.token, "databases"), "schemas": fetch_entities(args.api_url, args.token, "databaseSchemas"), "tables": fetch_entities(args.api_url, args.token, "tables"), **{endpoint: fetch_entities(args.api_url, args.token, endpoint) for endpoint, _ in CONSUMPTION_ENDPOINTS}}
+        entities = {"services": fetch_entities(args.api_url, args.token, "services/databaseServices"), "databases": fetch_entities(args.api_url, args.token, "databases"), "schemas": fetch_entities(args.api_url, args.token, "databaseSchemas"), "tables": fetch_entities(args.api_url, args.token, "tables"), **{endpoint: fetch_entities(args.api_url, args.token, endpoint) for endpoint, _ in CONSUMPTION_ENDPOINTS}, **{endpoint: fetch_entities(args.api_url, args.token, endpoint, fields="owner,description") for endpoint in SEMANTIC_EXPECTATIONS}}
         checks = verify_inventory(entities)
         checks.append(verify_consumption(entities))
         checks.append(verify_consumption_lineage(args.api_url, args.token))
+        checks.append(verify_semantic_governance(entities))
         dags = fetch_airflow_dags(args.airflow_url, args.airflow_username, args.airflow_password)
         checks.append(verify_airflow(dags, fetch_airflow_states(args.airflow_url, args.airflow_username, args.airflow_password, METADATA_DAGS | PROFILER_DAGS | {"Dremio_Federation_lineage", "Dremio_Federation_usage"} | {dag for dag in dags if dag.endswith("_dq")})))
         lineage = get_json(f"{args.api_url.rstrip('/')}/lineage/table/name/{quote(STUDENT_360, safe='')}?upstreamDepth=1&downstreamDepth=0", args.token)

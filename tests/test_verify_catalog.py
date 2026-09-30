@@ -13,6 +13,10 @@ class CatalogVerificationTest(unittest.TestCase):
             "dashboards": [{"fullyQualifiedName": f"Metabase_Institutional.{name}", "owner": {"name": "admin"}, "description": "documentado"} for name in ("Tablero_Rectoria", "Tablero_Decanatos", "Tablero_VR_Financiera")],
             "searchIndexes": [{"fullyQualifiedName": "Corpus_Search.corpus_chunks", "owner": {"name": "admin"}, "description": "documentado"}],
             "containers": [{"fullyQualifiedName": "Corpus_Storage.openrag_docs_corpus", "owner": {"name": "admin"}, "description": "documentado"}],
+            "glossaryTerms": [{"fullyQualifiedName": f"Universidad.{name}", "owner": {"name": "admin"}, "description": "documentado"} for name in ("metrica_institucional", "fecha_de_corte", "ventana_de_participacion", "corte_financiero", "estudiante_elegible", "elegibilidad_temporal", "semestre_academico", "facultad", "programa_formativo", "servicio_formativo", "cobertura_de_integracion", "participacion_academica", "tasa_de_cobro", "cobros_por_periodo")],
+            "domains": [{"fullyQualifiedName": name, "owner": {"name": "admin"}, "description": "documentado"} for name in ("Rectoria", "VR_Academica", "VR_Financiera", "Decanatos")],
+            "pipelines": [{"fullyQualifiedName": f"Airflow_Ingestion.{name}", "owner": {"name": "admin"}, "description": "documentado"} for name in ("Moodle_Postgres_metadata", "ERP_MSSQL_metadata", "SIS_MSSQL_metadata", "ERPNext_Postgres_metadata", "Dremio_Federation_lineage", "Dremio_Federation_usage")],
+            "charts": [{"fullyQualifiedName": f"Metabase_Institutional.{name}", "owner": {"name": "admin"}, "description": "documentado"} for name in ("Chart_Participacion_Facultad", "Chart_Estado_Financiero_Semestre", "Chart_Participacion_Programa", "Chart_Financiero_Semestre_VR", "Chart_Cobros_Mes")],
         }
 
         results = verify_inventory(entities)

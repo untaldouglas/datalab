@@ -19,6 +19,17 @@ Todo se ejecuta con `make metadata-consumption-sync` (bootstrap REST idempotente
 
 El bootstrap publica además el lineage de extremo a extremo (27 aristas): fuentes transaccionales → Silver → Gold → dashboards Metabase, y contenedor documental → índice vectorial. Así el linaje cubre desde el dato transaccional hasta el consumo en dashboard y asistente, verificable navegando en OpenMetadata a profundidad 3 desde cualquier tablero. Las dos tablas nuevas del seed (`sis.academic_registrations`, `erp.registration_payments`) se gobiernan de forma declarativa mediante `spec.tables` en sus manifiestos, aplicado por `make metadata-apply`.
 
+## Glosario, domains, pipelines y charts
+
+El mismo bootstrap completa la capa semántica y operativa:
+
+- **Glosario `Universidad`:** 14 términos canónicos (CONTEXT.md + contrato de KPIs D-01, F-01–F-03).
+- **Domains (Consumer-aligned):** `Rectoria`, `VR_Academica`, `VR_Financiera`, `Decanatos`; asignados a sus tres tableros Metabase.
+- **Pipelines:** servicio `Airflow_Ingestion` con las 6 entidades `Pipeline` (4 ingestas de metadatos + 2 DAGs de Dremio Federation) con horario y propósito documentados.
+- **Charts:** las 5 tarjetas Metabase como entidades `Chart` vinculadas a sus tableros, con su dataset `Gold_*` en la descripción.
+
+`make metadata-verify` incluye el control `gobierno-semanticas` (mínimos: 14 términos, 4 domains, 6 pipelines, 5 charts) y `lineage-consumo`.
+
 ## Consecuencias
 
 - El inventario del catálogo cubre ahora toda la cadena: fuentes → medallion → dashboards → corpus → índice.
