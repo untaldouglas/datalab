@@ -283,6 +283,11 @@ services:
       - bootstrap.memory_lock=true
       - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
       - DISABLE_SECURITY_PLUGIN=true
+      # Disco del host de desarrollo cercano al 95%: se suben los watermarks
+      # para este entorno local; en producción usar los valores por defecto.
+      - cluster.routing.allocation.disk.watermark.low=98%
+      - cluster.routing.allocation.disk.watermark.high=98%
+      - cluster.routing.allocation.disk.watermark.flood_stage=99%
     ports:
       - "9200:9200"
     volumes:
@@ -294,6 +299,26 @@ services:
   # ==========================================
   # 5. CAPA INTELIGENCIA ARTIFICIAL / RAG (Langflow / OpenRAG)
   # ==========================================
+  corpus-indexer:
+    build:
+      context: ./corpus-indexer
+    environment:
+      MINIO_ENDPOINT: "http://minio:9000"
+      MINIO_USER: "admin"
+      MINIO_PASSWORD: "MinioPassword123!"
+      OPENSEARCH_HOST: "opensearch"
+      QUERY: "${QUERY:-}"
+    volumes:
+      - ./corpus:/corpus:ro
+    depends_on:
+      minio:
+        condition: service_healthy
+      opensearch:
+        condition: service_started
+    networks:
+      - poc-network
+    logging: *default-logging
+
   langflow:
     image: langflowai/langflow:latest
     container_name: poc-langflow

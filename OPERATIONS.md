@@ -68,6 +68,20 @@ El servicio `metrics-gateway` lleva el código embebido en la imagen (no monta v
 
 `make metabase` inicia BI en `http://localhost:3030` (sólo localhost). Metabase se conecta a Dremio por **Arrow Flight SQL (puerto 32010)** con el driver comunitario incluido en `metabase/Dockerfile`; no uses el puerto `31010` (RPC propietario de Dremio, no es protocolo PostgreSQL). El procedimiento completo paso a paso, incluido el usuario `metabase_reader` y el tablero de Rectoría, está en [docs/metabase-setup.md](docs/metabase-setup.md). Restricción de gobierno: los dashboards se construyen únicamente sobre datasets de los espacios `Gold_*`. En Dremio OSS esta restricción es convención documentada, no un control de acceso técnico; el control duro para consumidores externos sigue siendo el gateway (ADR 0002).
 
+## Corpus documental (entregable 5)
+
+El corpus documental alimenta la ruta documental del asistente IA. Está formado por 8 documentos sintéticos versionados en `corpus/`, cada uno con frontmatter obligatorio: `title`, `source`, `date`, `classification` (`Internal`/`Confidential`/`Restricted`) y `audience`.
+
+```bash
+make corpus-load                                    # indexa en MinIO + OpenSearch
+make corpus-search QUERY='¿qué habilita el pago parcial?'   # búsqueda vectorial de prueba
+```
+
+- **MinIO** (`s3://openrag-docs/corpus/`) almacena el documento íntegro: es el origen de verdad.
+- **OpenSearch** mantiene el índice `corpus_chunks`: cada fragmento (~700 caracteres) lleva sus metadatos de citación y un embedding de 384 dimensiones (modelo local `paraphrase-multilingual-MiniLM-L12-v2`, sin servicios externos) en un campo k-NN (cosine).
+- La carga es idempotente: recrea el índice y resube los objetos en cada ejecución.
+- El asistente (entregable 6) debe recuperar fragmentos con su cita: documento, título, fecha y clasificación; si no hay evidencia suficiente, lo declara.
+
 ## Datos persistentes
 
 `make down` preserva los volúmenes Docker. La eliminación de volúmenes borra bases de datos, objetos y metadatos; no se automatiza mediante Make para evitar pérdida accidental de datos.
