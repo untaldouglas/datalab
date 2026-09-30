@@ -36,6 +36,10 @@ _Evitar_: dato al día sin evidencia, tiempo real asumido
 Periodo móvil de cuatro semanas calendario inmediatamente anteriores a la fecha de corte, usado para medir actividad académica observable.
 _Evitar_: actividad histórica sin periodo, último mes ambiguo
 
+**Corte financiero**:
+Instante al que se calcula el saldo pendiente o vencido; la emisión se asigna al semestre según la fecha de factura y un cobro, cuando exista su fecha, según la fecha real de pago.
+_Evitar_: saldo emitido, cobro estimado
+
 **Cobertura de integración**:
 Proporción o conteo agregado de registros que se enlazan entre fuentes aprobadas; no representa calidad, éxito académico ni completitud de negocio por sí sola.
 _Evitar_: indicador de desempeño, calidad total
