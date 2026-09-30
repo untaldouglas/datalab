@@ -18,7 +18,7 @@ Convertir el alta y la operación de fuentes de OpenMetadata en un proceso decla
 | --- | --- | --- | --- | --- |
 | 1 | Contrato declarativo | Esquema, validador y manifiesto de Moodle | `make metadata-check` es exitoso; se rechazan secretos y muestreo | Completada |
 | 2 | Cobertura de fuentes existentes | Manifiestos para ERP, SIS, ERPNext y Dremio | Un manifiesto validado por fuente y comparación con catálogo | Completada |
-| 3 | Planificador | Comando `plan` que muestra cambios contra OpenMetadata | Sin mutar servicios; salida revisable en PR | Pendiente |
+| 3 | Planificador | Comando `make metadata-plan` que muestra cambios contra OpenMetadata | Sin mutar servicios; salida revisable en PR | Completada |
 | 4 | Aplicador controlado | Comando `apply` idempotente para desarrollo | Reejecución sin duplicados; ejecución con identidad dedicada | Pendiente |
 | 5 | Verificación | Comando `verify` y evidencia de conteos, owners, DQ y DAGs | Falla si falta un activo, owner o ejecución esperada | Pendiente |
 | 6 | Gobierno en CI | Políticas OPA/Conftest y pipeline de Pull Request | Cambios no conformes no pueden fusionarse | Pendiente |
@@ -77,3 +77,30 @@ Los manifiestos de [ERP MSSQL](../../catalog/sources/erp-mssql.json), [SIS MSSQL
 ERP MSSQL y ERPNext PostgreSQL conservan servicios y motores distintos aunque ambos usen el nombre lógico `erpnext_db`; no se los debe fusionar. SIS y los dos ERP quedan clasificados como `restricted` por contener matrícula, identidad, facturación u operaciones financieras. Esta es una decisión de gobierno declarativa para la POC, no una afirmación de que el tag ya exista en OpenMetadata.
 
 Dremio usa el contrato [CustomCatalogSource](../../catalog/schemas/custom-catalog-source-v1alpha1.schema.json), en vez de simular pipelines relacionales inexistentes. Distingue explícitamente la ausencia de ingesta nativa de metadatos del `metadataBootstrap` idempotente bajo demanda; éste es un script personalizado, mientras lineage y usage son DAGs personalizados. Profiler y Data Quality permanecen en sus fuentes aguas arriba. Las referencias `airflow-secret://` describen el objetivo de operación y no crean secretos ni sustituyen las credenciales de desarrollo existentes.
+
+## Entregable de la fase 3
+
+El comando `make metadata-plan` compara los manifiestos validados con los servicios de bases de datos que expone la API de OpenMetadata. Sólo realiza solicitudes `GET`; no crea, modifica ni despliega servicios, ingestas, owners o etiquetas.
+
+El token JWT se entrega sólo en el entorno de ejecución y nunca se escribe en archivos versionados:
+
+```bash
+OPENMETADATA_JWT_TOKEN='token-temporal' make metadata-plan
+```
+
+Opcionalmente, se puede apuntar a otra instancia, ajustar el directorio de manifiestos o producir una salida para CI:
+
+```bash
+OPENMETADATA_JWT_TOKEN='token-temporal' make metadata-plan \
+  METADATA_PLAN_ARGS='--api-url http://localhost:8585/api/v1 --format json'
+```
+
+Por cada manifiesto, la salida declara `CREATE` si el servicio no existe, `NO_CHANGE` si coinciden los campos administrados, o `UPDATE` con las diferencias de `serviceType`, descripción, owner y clasificación. La clasificación se contrasta contra las etiquetas de OpenMetadata, aceptando tanto el nombre simple como un FQN terminado en la clasificación (por ejemplo, `PII.Restricted`). El alcance de bases, esquemas, programación e ingestas queda expresamente fuera de esta comparación de servicio; se incorporará al aplicador y verificador de las fases 4 y 5.
+
+### Validación visual
+
+1. Abre [OpenMetadata](http://localhost:8585) y entra a **Services → Databases**.
+2. Busca cada servicio indicado por la salida: `Moodle_Postgres`, `ERP_MSSQL`, `SIS_MSSQL`, `ERPNext_Postgres` y `Dremio_Federation`.
+3. Para una fila `NO_CHANGE`, compara en la ficha del servicio su tipo, descripción, owner y etiquetas con el manifiesto correspondiente.
+4. Para `CREATE`, confirma que el servicio no figura en la lista. Para `UPDATE`, abre la ficha y contrasta cada campo listado bajo la fila.
+5. Recarga la página al terminar: debe permanecer idéntica. Esa ausencia de mutaciones es el criterio principal de aceptación de la fase 3.

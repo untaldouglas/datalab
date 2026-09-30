@@ -2,10 +2,11 @@ COMPOSE ?= docker compose
 CURL ?= curl
 SERVICES ?=
 SERVICE ?=
+METADATA_PLAN_ARGS ?=
 
 .DEFAULT_GOAL := help
 
-.PHONY: help config pull up down restart ps logs health docs-check metadata-schema metadata-validate metadata-test metadata-check check db-shell shell urls seed seed-verify gui
+.PHONY: help config pull up down restart ps logs health docs-check metadata-schema metadata-validate metadata-test metadata-plan metadata-check check db-shell shell urls seed seed-verify gui
 
 help: ## Muestra los objetivos disponibles.
 	@awk 'BEGIN {FS = ":.*##"}; /^[a-zA-Z0-9_-]+:.*##/ {printf "%-12s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -63,6 +64,9 @@ metadata-validate: ## Valida los manifiestos declarativos del catálogo.
 
 metadata-test: ## Ejecuta las pruebas del validador de manifiestos.
 	python3 -m unittest discover -s tests -p 'test_*.py'
+
+metadata-plan: ## Compara manifiestos con OpenMetadata sin modificar el catálogo.
+	python3 scripts/plan_catalog.py $(METADATA_PLAN_ARGS)
 
 metadata-check: metadata-schema metadata-validate metadata-test ## Valida esquema, manifiestos y validador.
 
