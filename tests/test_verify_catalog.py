@@ -1,0 +1,30 @@
+import unittest
+
+from scripts.verify_catalog import verify_airflow, verify_inventory, verify_lineage
+
+
+class CatalogVerificationTest(unittest.TestCase):
+    def test_inventory_passes_when_all_expected_assets_have_owner_and_description(self):
+        entities = {
+            "services": [{"name": name} for name in ("Moodle_Postgres", "ERP_MSSQL", "SIS_MSSQL", "ERPNext_Postgres", "Dremio_Federation")],
+            "databases": [{"fullyQualifiedName": name, "owner": {"name": "admin"}, "description": "documentado"} for name in ("Moodle_Postgres.moodle_db", "ERP_MSSQL.erpnext_db", "SIS_MSSQL.sis_db", "ERPNext_Postgres.erpnext_db", "Dremio_Federation.Dremio")],
+            "schemas": [{"fullyQualifiedName": name, "owner": {"name": "admin"}, "description": "documentado"} for name in ("Moodle_Postgres.moodle_db.moodle", "ERP_MSSQL.erpnext_db.erp", "SIS_MSSQL.sis_db.sis", "ERPNext_Postgres.erpnext_db.erp", "Dremio_Federation.Dremio.University_Lab")],
+            "tables": [{"fullyQualifiedName": f"source.table_{index}", "owner": {"name": "admin"}, "description": "documentado"} for index in range(18)] + [{"fullyQualifiedName": "Dremio_Federation.Dremio.University_Lab.Student_360", "owner": {"name": "admin"}, "description": "documentado"}],
+        }
+
+        results = verify_inventory(entities)
+
+        self.assertEqual(["PASS", "PASS", "PASS"], [result["status"] for result in results])
+
+    def test_inventory_fails_when_a_required_database_is_absent(self):
+        results = verify_inventory({"services": [], "databases": [], "schemas": [], "tables": []})
+
+        self.assertEqual("FAIL", results[0]["status"])
+
+    def test_operational_checks_accept_erpnext_dq_and_lineage_nodes(self):
+        dags = {"Moodle_Postgres_metadata", "ERP_MSSQL_metadata", "SIS_MSSQL_metadata", "ERPNext_Postgres_metadata", "Moodle_Postgres_profiler", "ERP_MSSQL_profiler", "SIS_MSSQL_profiler", "ERPNext_Postgres_profiler", "Dremio_Federation_lineage", "Dremio_Federation_usage"}
+        dags.update({f"source_{index}_dq" for index in range(18)})
+        lineage = {"nodes": [{"fullyQualifiedName": name} for name in ("SIS_MSSQL.sis_db.sis.students", "SIS_MSSQL.sis_db.sis.enrollments", "Moodle_Postgres.moodle_db.moodle.users", "ERPNext_Postgres.erpnext_db.erp.student_invoices")]}
+
+        self.assertEqual("PASS", verify_airflow(dags, {dag: "success" for dag in dags})["status"])
+        self.assertEqual("PASS", verify_lineage(lineage)["status"])

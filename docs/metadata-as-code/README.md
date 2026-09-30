@@ -20,7 +20,7 @@ Convertir el alta y la operación de fuentes de OpenMetadata en un proceso decla
 | 2 | Cobertura de fuentes existentes | Manifiestos para ERP, SIS, ERPNext y Dremio | Un manifiesto validado por fuente y comparación con catálogo | Completada |
 | 3 | Planificador | Comando `make metadata-plan` que muestra cambios contra OpenMetadata | Sin mutar servicios; salida revisable en PR | Completada |
 | 4 | Aplicador controlado | Comando `make metadata-apply` idempotente para desarrollo | Reejecución sin duplicados; ejecución con identidad dedicada | Completada |
-| 5 | Verificación y punto de decisión | Comando `verify` con evidencia de inventario, owners, descripciones, DQ y DAGs; propuesta separada para gobierno de activos | Falla si falta un activo, owner o ejecución esperada; no modifica activos | Pendiente |
+| 5 | Verificación y punto de decisión | `make metadata-verify` con evidencia de inventario, owners, descripciones, DQ, DAGs y lineage; propuesta separada para gobierno de activos | Falla si falta un activo, owner o ejecución esperada; no modifica activos | Completada |
 | 6 | Gobierno en CI | Políticas OPA/Conftest y pipeline de Pull Request | Cambios no conformes no pueden fusionarse | Pendiente |
 | 7 | Secretos y operación | OpenBao/SOPS, rotación, observabilidad y runbooks | Sin secretos en Git/Compose; alertas y restauración probadas | Pendiente |
 
@@ -135,9 +135,18 @@ Las etiquetas asignadas al servicio no se copian automáticamente a `Database`, 
 
 El inventario esperado en Explore es de cinco bases, cinco esquemas y diecinueve tablas o vistas: las cuatro fuentes transaccionales aportan cuatro bases, cuatro esquemas y dieciocho tablas; Dremio añade `Dremio.University_Lab.Student_360` como una base, un esquema y una vista federada. Los owners y las descripciones de esos activos ya existen por las ingestas; las clasificaciones de activos descendientes aún no están declaradas ni sincronizadas.
 
-## Fase 5 propuesta: verificación y punto de decisión
+## Entregable de la fase 5: verificación y punto de decisión
 
-La fase 5 comenzará con `make metadata-verify`, una comprobación de solo lectura. Producirá evidencia por nivel de entidad y fallará si se incumple alguno de estos mínimos:
+`make metadata-verify` es una comprobación de solo lectura. Requiere credenciales de OpenMetadata y Airflow únicamente en el entorno de ejecución; no persiste secretos:
+
+```bash
+OPENMETADATA_JWT_TOKEN='token-temporal' \
+AIRFLOW_USERNAME='usuario-temporal' \
+AIRFLOW_PASSWORD='contraseña-temporal' \
+make metadata-verify
+```
+
+Produce evidencia por nivel de entidad y falla si se incumple alguno de estos mínimos:
 
 - existen las cinco fuentes, sus cinco bases y cinco esquemas esperados;
 - existen las dieciocho tablas transaccionales y la vista `Student_360`;
@@ -145,6 +154,6 @@ La fase 5 comenzará con `make metadata-verify`, una comprobación de solo lectu
 - los cuatro pipelines de metadata, profiler y Data Quality tienen una ejecución esperada;
 - `Student_360` conserva sus cuatro dependencias de lineage aprobadas.
 
-La salida distinguirá `PASS`, `FAIL` y `OUT_OF_SCOPE`. `OUT_OF_SCOPE` cubrirá expresamente las etiquetas de bases, esquemas y tablas, para que una ausencia de clasificación no se confunda con una falla de ingesta.
+La salida distingue `PASS`, `FAIL` y `OUT_OF_SCOPE`. `OUT_OF_SCOPE` cubre expresamente las etiquetas de bases, esquemas y tablas, para que una ausencia de clasificación no se confunda con una falla de ingesta.
 
 Con esa evidencia se hará un punto de análisis antes de mutar Data Assets. La decisión requerida será si la clasificación de un servicio debe propagarse a todos sus descendientes, si debe declararse por activo, o si algunos activos deben tener una clasificación más restrictiva. Hasta que esa política sea aprobada y declarada, ninguna automatización aplicará etiquetas a Database, Database Schema o Table/View.
