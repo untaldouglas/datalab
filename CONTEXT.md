@@ -32,6 +32,10 @@ _Evitar_: indicador sin fórmula, KPI calculado de manera implícita
 Instante hasta el cual se consideran los datos de una métrica o respuesta analítica.
 _Evitar_: dato al día sin evidencia, tiempo real asumido
 
+**Ventana de participación**:
+Periodo móvil de cuatro semanas calendario inmediatamente anteriores a la fecha de corte, usado para medir actividad académica observable.
+_Evitar_: actividad histórica sin periodo, último mes ambiguo
+
 **Cobertura de integración**:
 Proporción o conteo agregado de registros que se enlazan entre fuentes aprobadas; no representa calidad, éxito académico ni completitud de negocio por sí sola.
 _Evitar_: indicador de desempeño, calidad total
