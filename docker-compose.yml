@@ -319,6 +319,29 @@ services:
       - poc-network
     logging: *default-logging
 
+  # ==========================================
+  # 5b. ASISTENTE IA (dos herramientas: SQL aprobada vía gateway + corpus documental)
+  # ==========================================
+  assistant:
+    build:
+      context: ./assistant
+    container_name: poc-assistant
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8093:8090"
+    environment:
+      GATEWAY_URL: "http://metrics-gateway:8090"
+      OPENSEARCH_HOST: "opensearch"
+      ASSISTANT_PORT: "8090"
+    depends_on:
+      metrics-gateway:
+        condition: service_healthy
+      opensearch:
+        condition: service_started
+    networks:
+      - poc-network
+    logging: *default-logging
+
   langflow:
     image: langflowai/langflow:latest
     container_name: poc-langflow

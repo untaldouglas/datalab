@@ -8,7 +8,7 @@ METADATA_VERIFY_ARGS ?=
 
 .DEFAULT_GOAL := help
 
-.PHONY: help config pull up down restart ps logs health docs-check metadata-schema metadata-validate metadata-test metadata-plan metadata-apply metadata-verify metadata-dremio-sync demo-views gateway metabase corpus-load corpus-search metadata-check check db-shell shell urls seed seed-verify gui
+.PHONY: help config pull up down restart ps logs health docs-check metadata-schema metadata-validate metadata-test metadata-plan metadata-apply metadata-verify metadata-dremio-sync demo-views gateway metabase corpus-load corpus-search assistant metadata-check check db-shell shell urls seed seed-verify gui
 
 help: ## Muestra los objetivos disponibles.
 	@awk 'BEGIN {FS = ":.*##"}; /^[a-zA-Z0-9_-]+:.*##/ {printf "%-12s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -93,6 +93,9 @@ corpus-load: ## Indexa el corpus documental en MinIO y OpenSearch (vectorial k-N
 
 corpus-search: ## Consulta el corpus: make corpus-search QUERY="pregunta"
 	$(COMPOSE) run --rm -e QUERY='$(QUERY)' corpus-indexer python /app/load_corpus.py --search
+
+assistant: ## Inicia el asistente IA (http://localhost:8093).
+	$(COMPOSE) up -d --wait assistant
 
 gateway: ## Inicia el gateway local de métricas agregadas aprobadas.
 	$(COMPOSE) up -d --wait dremio
