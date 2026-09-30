@@ -81,12 +81,12 @@ Las vistas de consumo disponibles se crean con `make demo-views` siguiendo la ar
 - `Gold_Rectoria.Rectoral_Academic_Summary`: resultado agregado de R-01 y R-03 por Facultad, Programa y Servicio, incluyendo elegibles, participantes y porcentaje de participación.
 - `Gold_Rectoria.Rectoral_Financial_Summary`: resultado agregado de R-05 a R-07 por semestre de emisión y estado de pago.
 
-### Propuestas de audiencia (pendientes de aprobación del gate KPI)
+### Métricas de audiencia (aprobadas el 2026-09-30)
 
-Derivan las mismas fórmulas aprobadas a la granularidad de cada audiencia; agregan una métrica nueva de cobros que usa la fecha real de pago (`paid_at`):
+Derivan las mismas fórmulas aprobadas a la granularidad de cada audiencia:
 
-- `D-01` Participación por programa (Decanatos): misma fórmula de R-01/R-03 agrupada por Facultad, Programa y periodo; fuente `Gold_Decanatos.Decanato_Program_Participation`.
-- `F-01` Estado financiero por semestre (VR Financiera): R-05 a R-07 sin desglose por estado de pago, más tasa de cobro `F-02 = SUM(paid_amount) / SUM(total_amount)`; fuente `Gold_VR_Financiera.Financial_Collection_Summary`.
-- `F-03` Cobros por periodo (VR Financiera): conteo y suma de pagos con estado `paid` o `partial` agrupados por mes de `paid_at`, al corte; fuente `Gold_VR_Financiera.Monthly_Collection`. Requiere aprobar que la fecha real de pago (`registration_payments.paid_at`) es la fuente de verdad de cobros.
+- `D-01` Participación por programa (Decanatos): misma fórmula de R-01/R-03 agrupada por Facultad, Programa y periodo; fuente `Gold_Decanatos.Decanato_Program_Participation`. **Aprobada.**
+- `F-01` Estado financiero por semestre (VR Financiera): R-05 a R-07 sin desglose por estado de pago, más tasa de cobro `F-02 = SUM(paid_amount) / SUM(total_amount)`; fuente `Gold_VR_Financiera.Financial_Collection_Summary`. **Aprobada.**
+- `F-03` Cobros por periodo (VR Financiera): conteo y suma de pagos con estado `paid` o `partial` agrupados por mes de `paid_at`, al corte; fuente `Gold_VR_Financiera.Monthly_Collection`. **Aprobada: `registration_payments.paid_at` queda declarada como fuente de verdad de la fecha real de cobro** (decisión de Douglas, 2026-09-30).
 
 El resumen financiero es una foto del estado registrado en las facturas a la fecha de ejecución de la carga. La POC no contiene historial de cambios de estado ni pagos separados; por ello no reconstruye retrospectivamente el saldo de una fecha pasada. La instancia local Dremio OSS no permite comprobar grants por vista; el [ADR 0002](../adr/0002-dremio-oss-consumer-access-gate.md) bloquea la conexión de dashboard y Langflow/Hermes hasta configurar Dremio Enterprise/Cloud o un gateway de consultas permitido. Mientras tanto, `Eligible_Student_Activity` y `Academic_Activity_Events` son capas internas de cálculo y no deben compartirse.
