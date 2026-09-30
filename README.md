@@ -82,6 +82,10 @@ La evolución de esta POC se registra en [docs/metadata-as-code/README.md](docs/
 make metadata-check
 ```
 
+## Plan de demostración institucional
+
+El plan para cerrar la POC con dashboards institucionales y consumo gobernado mediante Langflow/Hermes está en [docs/final-poc-demo-plan.md](docs/final-poc-demo-plan.md). Define audiencias, métricas, controles, entregables y gates de decisión antes de habilitar consumo de negocio o IA.
+
 ## Desarrollo y contribución
 
 Las contribuciones son bienvenidas. Lee el [glosario canónico](CONTEXT.md), [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) y [SECURITY.md](SECURITY.md) antes de abrir un issue o pull request.
