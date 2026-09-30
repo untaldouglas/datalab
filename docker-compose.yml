@@ -223,6 +223,30 @@ services:
       - poc-network
     logging: *default-logging
 
+  metrics-gateway:
+    build:
+      context: ./gateway
+    container_name: poc-metrics-gateway
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8092:8090"
+    environment:
+      DREMIO_HOST: "http://dremio:9047"
+      DREMIO_USERNAME: "metrics_gateway"
+      DREMIO_PASSWORD: "MetricsGatewayPassword123!"
+      GATEWAY_PORT: "8090"
+    depends_on:
+      dremio:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:8090/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks:
+      - poc-network
+    logging: *default-logging
+
   # ==========================================
   # 4. CAPA BÚSQUEDA Y VECTORIAL (OpenSearch)
   # ==========================================

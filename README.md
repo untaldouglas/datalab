@@ -61,6 +61,12 @@ Después de `make seed`, ejecuta `make demo-views` para crear o actualizar las v
 
 Consulta las URL y credenciales de desarrollo en [CREDENCIALES.md](CREDENCIALES.md). Dremio solicita crear su cuenta administradora en el primer acceso.
 
+## Gateway institucional de métricas
+
+`make gateway` inicia `http://localhost:8092`, expuesto sólo en la máquina local. Su pantalla permite consultar los resúmenes académico y financiero; su API sólo admite `GET /api/v1/metrics/academic` y `GET /api/v1/metrics/financial`. Los filtros permitidos son los de negocio declarados por el gateway, por ejemplo `?faculty=Ingeniería` o `?status=overdue`; no existe un parámetro SQL ni una ruta para acceder a capas internas.
+
+Para validar el rechazo, abre `http://localhost:8092/api/v1/metrics/academic?sql=SELECT%201` y confirma HTTP 400. Para validar la auditoría, ejecuta `make logs SERVICES=metrics-gateway`: cada consulta o rechazo aparece como un evento JSON con identificador de solicitud, métrica, filtros y número de filas, sin registrar SQL ni datos personales.
+
 ## Operación habitual
 
 ```bash

@@ -8,7 +8,7 @@ METADATA_VERIFY_ARGS ?=
 
 .DEFAULT_GOAL := help
 
-.PHONY: help config pull up down restart ps logs health docs-check metadata-schema metadata-validate metadata-test metadata-plan metadata-apply metadata-verify demo-views metadata-check check db-shell shell urls seed seed-verify gui
+.PHONY: help config pull up down restart ps logs health docs-check metadata-schema metadata-validate metadata-test metadata-plan metadata-apply metadata-verify demo-views gateway metadata-check check db-shell shell urls seed seed-verify gui
 
 help: ## Muestra los objetivos disponibles.
 	@awk 'BEGIN {FS = ":.*##"}; /^[a-zA-Z0-9_-]+:.*##/ {printf "%-12s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -43,6 +43,8 @@ health: ## Comprueba bases y endpoints publicados.
 	$(CURL) --max-time 15 -fsS -o /dev/null http://localhost:9000/minio/health/live; \
 	printf '%s\n' 'Comprobando Dremio...'; \
 	$(CURL) --max-time 15 -fsS -o /dev/null http://localhost:9047/; \
+	printf '%s\n' 'Comprobando gateway de métricas...'; \
+	$(CURL) --max-time 15 -fsS -o /dev/null http://localhost:8092/health; \
 	printf '%s\n' 'Comprobando OpenSearch...'; \
 	$(CURL) --max-time 15 -fsS -o /dev/null http://localhost:9200/_cluster/health; \
 	printf '%s\n' 'Comprobando Langflow...'; \
@@ -79,6 +81,11 @@ metadata-verify: ## Verifica inventario y operación del catálogo sin mutarlo.
 demo-views: ## Crea las vistas Dremio aprobadas para la demostración.
 	$(COMPOSE) exec -T ingestion python /opt/airflow/dremio_sync/create_dremio_demo_views.py
 
+gateway: ## Inicia el gateway local de métricas agregadas aprobadas.
+	$(COMPOSE) up -d --wait dremio
+	$(COMPOSE) exec -T -e DREMIO_GATEWAY_PASSWORD='MetricsGatewayPassword123!' ingestion python /opt/airflow/dremio_sync/provision_gateway_user.py
+	$(COMPOSE) up -d --build --wait metrics-gateway
+
 metadata-check: metadata-schema metadata-validate metadata-test ## Valida esquema, manifiestos y validador.
 
 check: config docs-check metadata-check health ## Valida documentación, manifiestos, configuración y disponibilidad del stack.
@@ -112,4 +119,5 @@ urls: ## Muestra las interfaces web locales.
 	  'Langflow:     http://localhost:7860' \
 	  'OpenMetadata: http://localhost:8585' \
 	  'Airflow:      http://localhost:8080' \
-	  'DbGate:       http://localhost:3000'
+	  'DbGate:       http://localhost:3000' \
+	  'Métricas:     http://localhost:8092'

@@ -10,6 +10,7 @@
 | DbGate | http://localhost:3000 | No aplica | No aplica | Interfaz local; conexiones Moodle y ERP con `lab_viewer` (solo lectura). |
 | MinIO — consola | http://localhost:9001 | `admin` | `MinioPassword123!` | La API S3 está en http://localhost:9000. Buckets: `university-lakehouse` y `openrag-docs`. |
 | Dremio | http://localhost:9047 | `matias` | `matias123` | Administrador local; contiene los sources `Moodle_Postgres` y `ERP_MSSQL`. |
+| Gateway de métricas | http://localhost:8092 | No aplica | No aplica | Punto de consumo local: sólo resúmenes rectorales aprobados; no expone SQL ni credenciales Dremio. |
 | OpenSearch | http://localhost:9200 | No aplica | No aplica | El plugin de seguridad está deshabilitado para este entorno local. |
 | Langflow | http://localhost:7860 | `admin` | `LangflowPassword123!` | Superusuario configurado por Compose. |
 | OpenMetadata | http://localhost:8585 | `admin@open-metadata.org` | `admin` | Credenciales iniciales predeterminadas de OpenMetadata 1.3.1. |
