@@ -19,7 +19,8 @@ El `Makefile` centraliza las operaciones comunes:
 | `make down` | Detiene y elimina contenedores y red, conservando volúmenes. |
 | `make metadata-verify` | Verifica inventario y operación del catálogo sin mutarlo. |
 | `make demo-views` | Crea los espacios medallion (`Silver`, `Gold_*`) y las vistas Dremio aprobadas (ADR 0003). |
-| `make metadata-dremio-sync` | Cataloga en OpenMetadata `Student_360` y las vistas medallion (bootstrap idempotente). |
+| `make metadata-dremio-sync` | Cataloga en OpenMetadata `Student_360` y las espacios medallion (bootstrap idempotente). |
+| `make metadata-consumption-sync` | Cataloga en OpenMetadata tableros Metabase, índice corpus y bucket documental (ADR 0004). |
 | `make gateway` | Provisiona el usuario del gateway e inicia `metrics-gateway`. |
 | `make metabase` | Inicia Metabase en `http://localhost:3030` (BI sobre Dremio). |
 | `make db-shell` | Abre `psql` contra `moodle_db`. |

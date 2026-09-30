@@ -36,6 +36,14 @@ MEDALLION_VIEWS = {
 LINEAGE_UPSTREAM = {"SIS_MSSQL.sis_db.sis.students", "SIS_MSSQL.sis_db.sis.enrollments", "Moodle_Postgres.moodle_db.moodle.users", "ERPNext_Postgres.erpnext_db.erp.student_invoices"}
 METADATA_DAGS = {f"{service}_metadata" for service in ("Moodle_Postgres", "ERP_MSSQL", "SIS_MSSQL", "ERPNext_Postgres")}
 PROFILER_DAGS = {f"{service}_profiler" for service in ("Moodle_Postgres", "ERP_MSSQL", "SIS_MSSQL", "ERPNext_Postgres")}
+CONSUMPTION_ASSETS = {
+    "Metabase_Institutional.Tablero_Rectoria",
+    "Metabase_Institutional.Tablero_Decanatos",
+    "Metabase_Institutional.Tablero_VR_Financiera",
+    "Corpus_Search.corpus_chunks",
+    "Corpus_Storage.openrag_docs_corpus",
+}
+CONSUMPTION_ENDPOINTS = (("dashboards", {"Metabase_Institutional"}), ("searchIndexes", {"Corpus_Search"}), ("containers", {"Corpus_Storage"}))
 
 
 def result(status: str, control: str, detail: str) -> dict[str, str]:
@@ -144,6 +152,16 @@ def verify_lineage(payload: dict[str, Any]) -> dict[str, str]:
     return result("FAIL", "lineage-Student_360", _missing(LINEAGE_UPSTREAM, names)) if missing else result("PASS", "lineage-Student_360", "4 fuentes upstream aprobadas")
 
 
+def verify_consumption(entities: dict[str, list[dict[str, Any]]]) -> dict[str, str]:
+    found = set()
+    for endpoint, _ in CONSUMPTION_ENDPOINTS:
+        found |= _fqn_set(entities.get(endpoint, []))
+    missing = CONSUMPTION_ASSETS - found
+    if missing:
+        return result("FAIL", "activos-consumo", _missing(CONSUMPTION_ASSETS, found))
+    return result("PASS", "activos-consumo", "3 tableros Metabase, índice corpus y bucket documental catalogados")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--api-url", default=os.environ.get("OPENMETADATA_API_URL", DEFAULT_API_URL))
@@ -155,8 +173,9 @@ def main(argv: list[str] | None = None) -> int:
     if not args.token or not args.airflow_username or not args.airflow_password:
         parser.error("se requieren OPENMETADATA_JWT_TOKEN, AIRFLOW_USERNAME y AIRFLOW_PASSWORD sólo en el entorno de ejecución")
     try:
-        entities = {"services": fetch_entities(args.api_url, args.token, "services/databaseServices"), "databases": fetch_entities(args.api_url, args.token, "databases"), "schemas": fetch_entities(args.api_url, args.token, "databaseSchemas"), "tables": fetch_entities(args.api_url, args.token, "tables")}
+        entities = {"services": fetch_entities(args.api_url, args.token, "services/databaseServices"), "databases": fetch_entities(args.api_url, args.token, "databases"), "schemas": fetch_entities(args.api_url, args.token, "databaseSchemas"), "tables": fetch_entities(args.api_url, args.token, "tables"), **{endpoint: fetch_entities(args.api_url, args.token, endpoint) for endpoint, _ in CONSUMPTION_ENDPOINTS}}
         checks = verify_inventory(entities)
+        checks.append(verify_consumption(entities))
         dags = fetch_airflow_dags(args.airflow_url, args.airflow_username, args.airflow_password)
         checks.append(verify_airflow(dags, fetch_airflow_states(args.airflow_url, args.airflow_username, args.airflow_password, METADATA_DAGS | PROFILER_DAGS | {"Dremio_Federation_lineage", "Dremio_Federation_usage"} | {dag for dag in dags if dag.endswith("_dq")})))
         lineage = get_json(f"{args.api_url.rstrip('/')}/lineage/table/name/{quote(STUDENT_360, safe='')}?upstreamDepth=1&downstreamDepth=0", args.token)

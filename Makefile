@@ -8,7 +8,7 @@ METADATA_VERIFY_ARGS ?=
 
 .DEFAULT_GOAL := help
 
-.PHONY: help config pull up down restart ps logs health docs-check metadata-schema metadata-validate metadata-test metadata-plan metadata-apply metadata-verify metadata-dremio-sync demo-views gateway metabase corpus-load corpus-search assistant metadata-check check db-shell shell urls seed seed-verify gui
+.PHONY: help config pull up down restart ps logs health docs-check metadata-schema metadata-validate metadata-test metadata-plan metadata-apply metadata-verify metadata-dremio-sync demo-views gateway metabase corpus-load corpus-search assistant metadata-consumption-sync metadata-check check db-shell shell urls seed seed-verify gui
 
 help: ## Muestra los objetivos disponibles.
 	@awk 'BEGIN {FS = ":.*##"}; /^[a-zA-Z0-9_-]+:.*##/ {printf "%-12s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -83,6 +83,9 @@ demo-views: ## Crea los espacios medallion y las vistas Dremio aprobadas (ADR 00
 
 metadata-dremio-sync: ## Cataloga en OpenMetadata Student_360 y los espacios medallion.
 	$(COMPOSE) exec -T ingestion python /opt/airflow/dremio_sync/dremio_openmetadata_sync.py bootstrap
+
+metadata-consumption-sync: ## Cataloga en OpenMetadata dashboards Metabase, índice corpus y bucket documental.
+	$(COMPOSE) exec -T ingestion python /opt/airflow/dremio_sync/consumption_bootstrap.py
 
 metabase: ## Inicia Metabase (BI) sobre el wire protocol PostgreSQL de Dremio.
 	$(COMPOSE) up -d --wait metabase
