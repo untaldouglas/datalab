@@ -57,7 +57,7 @@ SELECT * FROM "University_Lab"."Student_360";
 SELECT * FROM "University_Lab"."Eligible_Student_Activity";
 ```
 
-Después de `make seed`, ejecuta `make demo-views` para crear o actualizar la vista de consumo `Eligible_Student_Activity`. Incluye sólo matrículas vigentes con pago de matrícula `paid` o `partial`; este último se marca como elegibilidad temporal.
+Después de `make seed`, ejecuta `make demo-views` para crear o actualizar las vistas de consumo aprobadas. `Eligible_Student_Activity` incluye sólo matrículas vigentes con pago de matrícula `paid` o `partial`; este último se marca como elegibilidad temporal. `Rectoral_Academic_Summary` y `Rectoral_Financial_Summary` entregan agregados sin nombres ni identificadores para el tablero gerencial. La fecha de corte demostrativa se declara explícitamente en `Demo_Reporting_Cutoff` (31 de marzo de 2026), por lo que puede cambiarse de forma trazable antes de una demostración.
 
 Consulta las URL y credenciales de desarrollo en [CREDENCIALES.md](CREDENCIALES.md). Dremio solicita crear su cuenta administradora en el primer acceso.
 
