@@ -73,4 +73,4 @@ Las respuestas deben explicar que la POC opera con agregados sintéticos y que e
 
 Antes de las vistas se añadirá el modelo sintético `academic_registrations` en SIS y `registration_payments` en ERPNext. Una matrícula `vigente` con pago `paid` o `partial` permitirá cursar los servicios formativos activos asociados; `partial` se identificará como elegibilidad temporal. La fecha de fin de gracia no se inventará para la POC: antes de producción debe ser definida por la política financiera.
 
-Por cada métrica aprobada se creará una vista Dremio con nombre, SQL, campos de filtro, prueba de reconciliación y referencia a su owner. El tablero rectoral usará esas vistas; Langflow/Hermes sólo podrá consultar el mismo conjunto aprobado.
+La primera vista de consumo ya disponible es `University_Lab.Eligible_Student_Activity`, creada con `make demo-views`. Expone únicamente matrículas vigentes con pago `paid` o `partial`, identifica la elegibilidad temporal y agrega Facultad, Programa y Curso. El tablero rectoral usará vistas aprobadas; Langflow/Hermes sólo podrá consultar el mismo conjunto aprobado.

@@ -54,7 +54,10 @@ El VDS `University_Lab.Student_360` consolida SIS, Moodle y ERPNext en una vista
 ```sql
 SELECT COUNT(*) FROM "Moodle_Postgres".moodle.courses;
 SELECT * FROM "University_Lab"."Student_360";
+SELECT * FROM "University_Lab"."Eligible_Student_Activity";
 ```
+
+Después de `make seed`, ejecuta `make demo-views` para crear o actualizar la vista de consumo `Eligible_Student_Activity`. Incluye sólo matrículas vigentes con pago de matrícula `paid` o `partial`; este último se marca como elegibilidad temporal.
 
 Consulta las URL y credenciales de desarrollo en [CREDENCIALES.md](CREDENCIALES.md). Dremio solicita crear su cuenta administradora en el primer acceso.
 

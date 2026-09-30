@@ -6,6 +6,7 @@ GO
 IF SCHEMA_ID(N'sis') IS NULL EXEC(N'CREATE SCHEMA sis');
 GO
 DROP TABLE IF EXISTS sis.enrollments;
+DROP TABLE IF EXISTS sis.academic_registrations;
 DROP TABLE IF EXISTS sis.students;
 GO
 CREATE TABLE sis.students (
@@ -22,6 +23,12 @@ CREATE TABLE sis.enrollments (
   course_code nvarchar(30) NOT NULL,
   enrollment_status nvarchar(20) NOT NULL CHECK (enrollment_status IN ('enrolled', 'withdrawn'))
 );
+CREATE TABLE sis.academic_registrations (
+  registration_id integer PRIMARY KEY,
+  student_id nvarchar(20) NOT NULL REFERENCES sis.students(student_id),
+  academic_term nvarchar(20) NOT NULL,
+  registration_status nvarchar(20) NOT NULL CHECK (registration_status IN ('vigente', 'cancelled'))
+);
 INSERT INTO sis.students VALUES
  (N'STU-1001', N'ana.lopez@est.ujmd.edu.sv', N'Ana López', N'Ingeniería de Datos', N'active'),
  (N'STU-1002', N'diego.ruiz@est.ujmd.edu.sv', N'Diego Ruiz', N'Ingeniería de Datos', N'active'),
@@ -36,6 +43,10 @@ INSERT INTO sis.enrollments VALUES
  (4, N'STU-1004', N'2026-01', N'DAT-101', N'enrolled'),
  (5, N'STU-1005', N'2026-01', N'ADM-210', N'enrolled'),
  (6, N'STU-1006', N'2026-01', N'DAT-220', N'withdrawn');
+INSERT INTO sis.academic_registrations VALUES
+ (1,N'STU-1001',N'2026-01',N'vigente'), (2,N'STU-1002',N'2026-01',N'vigente'),
+ (3,N'STU-1003',N'2026-01',N'vigente'), (4,N'STU-1004',N'2026-01',N'vigente'),
+ (5,N'STU-1005',N'2026-01',N'vigente'), (6,N'STU-1006',N'2026-01',N'vigente');
 IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = N'lab_viewer')
   CREATE USER [lab_viewer] FOR LOGIN [lab_viewer];
 GRANT SELECT ON SCHEMA::sis TO [lab_viewer];

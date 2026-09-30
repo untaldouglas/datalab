@@ -8,7 +8,7 @@ METADATA_VERIFY_ARGS ?=
 
 .DEFAULT_GOAL := help
 
-.PHONY: help config pull up down restart ps logs health docs-check metadata-schema metadata-validate metadata-test metadata-plan metadata-apply metadata-verify metadata-check check db-shell shell urls seed seed-verify gui
+.PHONY: help config pull up down restart ps logs health docs-check metadata-schema metadata-validate metadata-test metadata-plan metadata-apply metadata-verify demo-views metadata-check check db-shell shell urls seed seed-verify gui
 
 help: ## Muestra los objetivos disponibles.
 	@awk 'BEGIN {FS = ":.*##"}; /^[a-zA-Z0-9_-]+:.*##/ {printf "%-12s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -75,6 +75,9 @@ metadata-apply: ## Aplica cambios aprobados al catálogo; requiere METADATA_APPL
 
 metadata-verify: ## Verifica inventario y operación del catálogo sin mutarlo.
 	python3 scripts/verify_catalog.py $(METADATA_VERIFY_ARGS)
+
+demo-views: ## Crea las vistas Dremio aprobadas para la demostración.
+	$(COMPOSE) exec -T ingestion python /opt/airflow/dremio_sync/create_dremio_demo_views.py
 
 metadata-check: metadata-schema metadata-validate metadata-test ## Valida esquema, manifiestos y validador.
 

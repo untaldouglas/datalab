@@ -12,8 +12,14 @@ CREATE TABLE IF NOT EXISTS student_invoices (
   paid_amount numeric(12,2) NOT NULL,
   payment_status text NOT NULL CHECK (payment_status IN ('paid', 'partial', 'unpaid', 'overdue'))
 );
+CREATE TABLE IF NOT EXISTS registration_payments (
+  payment_id integer PRIMARY KEY, registration_id integer NOT NULL, student_id text NOT NULL,
+  academic_term text NOT NULL, payment_status text NOT NULL CHECK (payment_status IN ('paid', 'partial', 'pending', 'overdue', 'cancelled')),
+  paid_at date, amount numeric(12,2) NOT NULL
+);
 
 TRUNCATE student_invoices;
+TRUNCATE registration_payments;
 INSERT INTO student_invoices VALUES
  (1, 'SINV-PG-0001', 'STU-1001', '2026-01-15', '2026-02-14', 420.00, 420.00, 'paid'),
  (2, 'SINV-PG-0002', 'STU-1002', '2026-01-15', '2026-02-14', 420.00, 300.00, 'partial'),
@@ -21,6 +27,10 @@ INSERT INTO student_invoices VALUES
  (4, 'SINV-PG-0004', 'STU-1004', '2026-02-15', '2026-03-14', 420.00, 420.00, 'paid'),
  (5, 'SINV-PG-0005', 'STU-1005', '2026-03-15', '2026-04-14', 420.00, 0.00, 'unpaid'),
  (6, 'SINV-PG-0006', 'STU-1006', '2026-03-15', '2026-04-14', 420.00, 420.00, 'paid');
+INSERT INTO registration_payments VALUES
+ (1,1,'STU-1001','2026-01','paid','2026-01-15',420), (2,2,'STU-1002','2026-01','partial','2026-01-20',300),
+ (3,3,'STU-1003','2026-01','overdue',NULL,0), (4,4,'STU-1004','2026-01','paid','2026-02-15',420),
+ (5,5,'STU-1005','2026-01','pending',NULL,0), (6,6,'STU-1006','2026-01','cancelled',NULL,0);
 
 DO $$
 BEGIN
