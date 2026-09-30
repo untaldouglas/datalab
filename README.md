@@ -97,7 +97,7 @@ make metadata-check
 
 ## Plan de demostración institucional
 
-El plan para cerrar la POC con dashboards institucionales y consumo gobernado mediante Langflow/Hermes está en [docs/final-poc-demo-plan.md](docs/final-poc-demo-plan.md). Define audiencias, métricas, controles, entregables y gates de decisión antes de habilitar consumo de negocio o IA.
+El plan para cerrar la POC con dashboards institucionales y consumo gobernado mediante Langflow/Hermes está en [docs/final-poc-demo-plan.md](docs/final-poc-demo-plan.md). El recorrido de demostración para una persona no técnica está en [docs/demo-script.md](docs/demo-script.md). Define audiencias, métricas, controles, entregables y gates de decisión antes de habilitar consumo de negocio o IA.
 
 ## Desarrollo y contribución
 
