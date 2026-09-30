@@ -84,7 +84,7 @@ Se completó la documentación de los activos transaccionales actualmente catalo
 | Tablas | 18 | `admin` | Sí |
 | Atributos/columnas | 111 | Responsabilidad de gobierno: owner de la tabla | Sí |
 
-Estos totales cubren las cuatro fuentes transaccionales. En **Explore**, Dremio añade de forma intencional una quinta base (`Dremio`), un quinto esquema (`University_Lab`) y la vista `Student_360`; por ello la interfaz muestra cinco bases, cinco esquemas y diecinueve tablas o vistas. No es una discrepancia de ingesta.
+Estos totales cubren las cuatro fuentes transaccionales. En **Explore**, Dremio añade de forma intencional una quinta base (`Dremio`), los esquemas `University_Lab` (vista federada `Student_360`) y los espacios medallion `Silver`, `Gold_Rectoria`, `Gold_Decanatos` y `Gold_VR_Financiera` con las vistas de consumo del [ADR 0003](docs/adr/0003-dremio-medallion-audience-spaces.md). La interfaz muestra cinco bases, nueve esquemas y veinticuatro tablas o vistas. No es una discrepancia de ingesta: los espacios medallion se catalogan con `make metadata-dremio-sync`.
 
 `admin` es el owner operativo temporal porque es la única cuenta administradora disponible en este entorno. En producción debe sustituirse por equipos o usuarios responsables de negocio (por ejemplo, Académica, Finanzas o TI) mediante la pestaña **Ownership** de cada base, esquema o tabla.
 
@@ -98,7 +98,7 @@ La imagen `openmetadata/ingestion:1.3.1` no distribuye un conector Dremio. Por e
 
 El bootstrap es idempotente y se ejecuta con `python /opt/airflow/dremio_sync/dremio_openmetadata_sync.py bootstrap`: resuelve `University_Lab.Student_360` por ruta (no por UUID), crea si faltan el servicio, base, esquema y vista, y conserva el SQL y las columnas devueltas por la API de Dremio. Su lineage valida las cuatro fuentes aprobadas: `SIS_MSSQL.sis_db.sis.students`, `SIS_MSSQL.sis_db.sis.enrollments`, `Moodle_Postgres.moodle_db.moodle.users` y `ERPNext_Postgres.erpnext_db.erp.student_invoices`.
 
-Los DAGs personalizados, versionados en `dags/dremio_openmetadata.py`, se montan en el servicio `ingestion` y utilizan `scripts/dremio_openmetadata_sync.py`:
+Los DAGs personalizados, versionados en `dags/dremio_openmetadata.py`, se montan en el servicio `ingestion` y utilizan `scripts/dremio_openmetadata_sync.py`. Además del bootstrap de `Student_360`, la operación `bootstrap` cataloga los espacios medallion (`Silver`, `Gold_Rectoria`, `Gold_Decanatos`, `Gold_VR_Financiera`) y sus vistas de consumo mediante `ensure_medallion_catalog`; ejecútala con `make metadata-dremio-sync` después de cualquier cambio de `make demo-views`:
 
 | DAG | Horario (`America/El_Salvador`) | Acción |
 | --- | --- | --- |

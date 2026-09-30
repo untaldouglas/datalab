@@ -8,7 +8,7 @@ METADATA_VERIFY_ARGS ?=
 
 .DEFAULT_GOAL := help
 
-.PHONY: help config pull up down restart ps logs health docs-check metadata-schema metadata-validate metadata-test metadata-plan metadata-apply metadata-verify demo-views gateway metadata-check check db-shell shell urls seed seed-verify gui
+.PHONY: help config pull up down restart ps logs health docs-check metadata-schema metadata-validate metadata-test metadata-plan metadata-apply metadata-verify metadata-dremio-sync demo-views gateway metabase metadata-check check db-shell shell urls seed seed-verify gui
 
 help: ## Muestra los objetivos disponibles.
 	@awk 'BEGIN {FS = ":.*##"}; /^[a-zA-Z0-9_-]+:.*##/ {printf "%-12s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -78,8 +78,14 @@ metadata-apply: ## Aplica cambios aprobados al catálogo; requiere METADATA_APPL
 metadata-verify: ## Verifica inventario y operación del catálogo sin mutarlo.
 	python3 scripts/verify_catalog.py $(METADATA_VERIFY_ARGS)
 
-demo-views: ## Crea las vistas Dremio aprobadas para la demostración.
+demo-views: ## Crea los espacios medallion y las vistas Dremio aprobadas (ADR 0003).
 	$(COMPOSE) exec -T ingestion python /opt/airflow/dremio_sync/create_dremio_demo_views.py
+
+metadata-dremio-sync: ## Cataloga en OpenMetadata Student_360 y los espacios medallion.
+	$(COMPOSE) exec -T ingestion python /opt/airflow/dremio_sync/dremio_openmetadata_sync.py bootstrap
+
+metabase: ## Inicia Metabase (BI) sobre el wire protocol PostgreSQL de Dremio.
+	$(COMPOSE) up -d --wait metabase
 
 gateway: ## Inicia el gateway local de métricas agregadas aprobadas.
 	$(COMPOSE) up -d --wait dremio

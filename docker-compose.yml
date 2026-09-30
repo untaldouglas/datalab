@@ -22,6 +22,7 @@ volumes:
   airflow_data:
   airflow_dags:
   airflow_tmp:
+  metabase_data:
 
 services:
   # ==========================================
@@ -243,6 +244,26 @@ services:
       interval: 10s
       timeout: 5s
       retries: 12
+    networks:
+      - poc-network
+    logging: *default-logging
+
+  # ==========================================
+  # 3b. CAPA BI (Metabase sobre el wire protocol PostgreSQL de Dremio)
+  # ==========================================
+  metabase:
+    image: metabase/metabase:v0.49.13
+    container_name: poc-metabase
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3030:3000"
+    environment:
+      MB_ANON_TRACKING_ENABLED: "false"
+    volumes:
+      - metabase_data:/metabase.db
+    depends_on:
+      dremio:
+        condition: service_started
     networks:
       - poc-network
     logging: *default-logging

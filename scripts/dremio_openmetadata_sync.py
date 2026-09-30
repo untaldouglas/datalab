@@ -22,6 +22,15 @@ SOURCE_FQNS = (
     "ERPNext_Postgres.erpnext_db.erp.student_invoices",
 )
 
+# Espacios medallion (ADR 0003) sincronizados hacia OpenMetadata.
+MEDALLION_SPACES = ("Silver", "Gold_Rectoria", "Gold_Decanatos", "Gold_VR_Financiera")
+SPACE_DESCRIPTIONS = {
+    "Silver": "Capa plata: reglas de negocio reutilizables (elegibilidad, eventos de actividad, fecha de corte).",
+    "Gold_Rectoria": "Capa oro de Rectoría: agregados de consumo aprobados para el tablero gerencial.",
+    "Gold_Decanatos": "Capa oro de Decanatos: agregados por programa (reservado; sin vistas publicadas aún).",
+    "Gold_VR_Financiera": "Capa oro de Vicerrectoría Financiera: agregados financieros (reservado; sin vistas publicadas aún).",
+}
+
 
 def om_token():
     with psycopg2.connect(
@@ -105,6 +114,47 @@ def ensure_catalog(om, vds):
     post_if_missing(om, f"{api}/tables", {"name": "Student_360", "displayName": "Student 360", "databaseSchema": "Dremio_Federation.Dremio.University_Lab", "tableType": "View", "owner": owner, "description": "Vista virtual que consolida identidad académica, matrícula, Moodle y facturación por estudiante.", "columns": columns, "viewDefinition": vds["sql"], "sourceUrl": os.environ["DREMIO_HOST"]})
 
 
+def get_space_children(dremio, space_name):
+    """Devuelve los datasets hijos de un space de Dremio resuelto por ruta."""
+    root = get_json(dremio, f"{os.environ['DREMIO_HOST']}/api/v3/catalog")["data"]
+    space = next(item for item in root if item.get("path") == [space_name])
+    return get_json(dremio, f"{os.environ['DREMIO_HOST']}/api/v3/catalog/{space['id']}")["children"]
+
+
+def ensure_medallion_catalog(om, dremio):
+    """Cataloga los espacios medallion y sus vistas de demo en OpenMetadata."""
+    api = os.environ["OPENMETADATA_API_URL"]
+    admin = get_json(om, f"{api}/users/name/admin")
+    owner = {"id": admin["id"], "type": "user"}
+    for space_name in MEDALLION_SPACES:
+        post_if_missing(om, f"{api}/databaseSchemas", {
+            "name": space_name, "database": "Dremio_Federation.Dremio", "owner": owner,
+            "description": SPACE_DESCRIPTIONS[space_name],
+        })
+        children = get_space_children(dremio, space_name)
+        for child in children:
+            if child.get("type") not in {"VIRTUAL_DATASET", "DATASET"}:
+                continue
+            detail = get_json(dremio, f"{os.environ['DREMIO_HOST']}/api/v3/catalog/{child['id']}")
+            type_map = {"VARCHAR": "VARCHAR", "DATE": "DATE", "DECIMAL": "DECIMAL", "BIGINT": "BIGINT", "INTEGER": "INT"}
+            columns = []
+            for position, field in enumerate(detail["fields"], 1):
+                source_type = field["type"]["name"]
+                column = {"name": field["name"], "dataType": type_map.get(source_type, "VARCHAR"), "ordinalPosition": position, "description": f"Columna {field['name']} publicada por la vista de consumo {child['path'][-1]}."}
+                if column["dataType"] == "VARCHAR":
+                    column["dataLength"] = 255
+                if column["dataType"] == "DECIMAL":
+                    column.update({"precision": field["type"].get("precision", 38), "scale": field["type"].get("scale", 0)})
+                columns.append(column)
+            post_if_missing(om, f"{api}/tables", {
+                "name": child["path"][-1], "displayName": child["path"][-1],
+                "databaseSchema": f"Dremio_Federation.Dremio.{space_name}", "tableType": "View",
+                "owner": owner, "columns": columns, "viewDefinition": detail.get("sql", ""),
+                "description": f"Vista de consumo aprobada en el espacio {space_name} (capa oro/plata, ADR 0003).",
+                "sourceUrl": os.environ["DREMIO_HOST"],
+            })
+
+
 def publish_lineage():
     dremio = dremio_session()
     vds = get_vds(dremio)
@@ -175,7 +225,9 @@ if __name__ == "__main__":
     operation = sys.argv[1] if len(sys.argv) == 2 else ""
     if operation == "bootstrap":
         dremio = dremio_session()
-        ensure_catalog(om_session(), get_vds(dremio))
+        om = om_session()
+        ensure_catalog(om, get_vds(dremio))
+        ensure_medallion_catalog(om, dremio)
     elif operation == "lineage":
         publish_lineage()
     elif operation == "usage":

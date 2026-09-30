@@ -21,8 +21,15 @@ except ModuleNotFoundError:
 
 SERVICES = {"Moodle_Postgres", "ERP_MSSQL", "SIS_MSSQL", "ERPNext_Postgres", "Dremio_Federation"}
 DATABASES = {"Moodle_Postgres.moodle_db", "ERP_MSSQL.erpnext_db", "SIS_MSSQL.sis_db", "ERPNext_Postgres.erpnext_db", "Dremio_Federation.Dremio"}
-SCHEMAS = {"Moodle_Postgres.moodle_db.moodle", "ERP_MSSQL.erpnext_db.erp", "SIS_MSSQL.sis_db.sis", "ERPNext_Postgres.erpnext_db.erp", "Dremio_Federation.Dremio.University_Lab"}
+SCHEMAS = {"Moodle_Postgres.moodle_db.moodle", "ERP_MSSQL.erpnext_db.erp", "SIS_MSSQL.sis_db.sis", "ERPNext_Postgres.erpnext_db.erp", "Dremio_Federation.Dremio.University_Lab", "Dremio_Federation.Dremio.Silver", "Dremio_Federation.Dremio.Gold_Rectoria", "Dremio_Federation.Dremio.Gold_Decanatos", "Dremio_Federation.Dremio.Gold_VR_Financiera"}
 STUDENT_360 = "Dremio_Federation.Dremio.University_Lab.Student_360"
+MEDALLION_VIEWS = {
+    "Dremio_Federation.Dremio.Silver.Eligible_Student_Activity",
+    "Dremio_Federation.Dremio.Silver.Academic_Activity_Events",
+    "Dremio_Federation.Dremio.Silver.Demo_Reporting_Cutoff",
+    "Dremio_Federation.Dremio.Gold_Rectoria.Rectoral_Academic_Summary",
+    "Dremio_Federation.Dremio.Gold_Rectoria.Rectoral_Financial_Summary",
+}
 LINEAGE_UPSTREAM = {"SIS_MSSQL.sis_db.sis.students", "SIS_MSSQL.sis_db.sis.enrollments", "Moodle_Postgres.moodle_db.moodle.users", "ERPNext_Postgres.erpnext_db.erp.student_invoices"}
 METADATA_DAGS = {f"{service}_metadata" for service in ("Moodle_Postgres", "ERP_MSSQL", "SIS_MSSQL", "ERPNext_Postgres")}
 PROFILER_DAGS = {f"{service}_profiler" for service in ("Moodle_Postgres", "ERP_MSSQL", "SIS_MSSQL", "ERPNext_Postgres")}
@@ -47,12 +54,17 @@ def verify_inventory(entities: dict[str, list[dict[str, Any]]]) -> list[dict[str
     tables = _fqn_set(entities["tables"])
     expected_inventory = (("servicios", SERVICES, service_names), ("bases", DATABASES, databases), ("esquemas", SCHEMAS, schemas))
     missing_inventory = [f"{label}: {_missing(expected, actual)}" for label, expected, actual in expected_inventory if expected - actual]
-    inventory = result("FAIL", "inventario", "; ".join(missing_inventory)) if missing_inventory else result("PASS", "inventario", "5 servicios, 5 bases y 5 esquemas esperados")
-    transaccionals = [table for table in entities["tables"] if table.get("fullyQualifiedName") != STUDENT_360]
+    inventory = result("FAIL", "inventario", "; ".join(missing_inventory)) if missing_inventory else result("PASS", "inventario", "5 servicios, 5 bases y 9 esquemas esperados")
+    transaccionals = [table for table in entities["tables"] if table.get("fullyQualifiedName") not in MEDALLION_VIEWS | {STUDENT_360}]
     assets = entities["databases"] + entities["schemas"] + entities["tables"]
     incomplete = [entity.get("fullyQualifiedName", entity.get("name", "<sin nombre>")) for entity in assets if not isinstance(entity.get("owner"), dict) or not entity["owner"].get("name") or not isinstance(entity.get("description"), str) or not entity["description"].strip()]
     governance = result("FAIL", "owner-y-descripción", ", ".join(incomplete)) if incomplete else result("PASS", "owner-y-descripción", f"{len(assets)} activos con owner y descripción")
-    table_status = result("PASS", "tablas-y-vista", "18 tablas transaccionales y Student_360") if len(transaccionals) == 18 and STUDENT_360 in tables else result("FAIL", "tablas-y-vista", f"se esperaban 18 tablas transaccionales y {STUDENT_360}")
+    tables = _fqn_set(entities["tables"])
+    expected_dremio = MEDALLION_VIEWS | {STUDENT_360}
+    if len(transaccionals) == 18 and expected_dremio <= tables:
+        table_status = result("PASS", "tablas-y-vistas", "18 tablas transaccionales, Student_360 y 5 vistas medallion")
+    else:
+        table_status = result("FAIL", "tablas-y-vistas", f"se esperaban 18 tablas transaccionales, {STUDENT_360} y las vistas medallion; faltan: {_missing(expected_dremio, tables)}")
     return [inventory, governance, table_status]
 
 

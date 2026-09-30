@@ -61,6 +61,10 @@ Después de `make seed`, ejecuta `make demo-views` para crear los espacios y las
 
 Consulta las URL y credenciales de desarrollo en [CREDENCIALES.md](CREDENCIALES.md). Dremio solicita crear su cuenta administradora en el primer acceso.
 
+## BI con Metabase
+
+`make metabase` inicia Metabase en http://localhost:3030. Conéctalo a Dremio con el driver **PostgreSQL** (host `dremio`, puerto `31010`, usuario `lab_viewer`) y construye los dashboards sólo sobre los espacios `Gold_*`; consulta [OPERATIONS.md](OPERATIONS.md#metabase) para el procedimiento y sus límites de gobierno.
+
 ## Gateway institucional de métricas
 
 `make gateway` inicia `http://localhost:8092`, expuesto sólo en la máquina local. Su pantalla permite consultar los resúmenes académico y financiero; su API sólo admite `GET /api/v1/metrics/academic` y `GET /api/v1/metrics/financial`. Los filtros permitidos son los de negocio declarados por el gateway, por ejemplo `?faculty=Ingeniería` o `?status=overdue`; no existe un parámetro SQL ni una ruta para acceder a capas internas.

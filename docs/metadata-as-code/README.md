@@ -133,7 +133,7 @@ Database Service                 ← fases 3 y 4: planificado y sincronizado
 
 Las etiquetas asignadas al servicio no se copian automáticamente a `Database`, `Database Schema` ni `Table/View`. Por tanto, que Explore muestre `No Tags added` en `moodle_db` no contradice un `NO_CHANGE` del planificador: ambos resultados corresponden a niveles distintos.
 
-El inventario esperado en Explore es de cinco bases, cinco esquemas y diecinueve tablas o vistas: las cuatro fuentes transaccionales aportan cuatro bases, cuatro esquemas y dieciocho tablas; Dremio añade `Dremio.University_Lab.Student_360` como una base, un esquema y una vista federada. Los owners y las descripciones de esos activos ya existen por las ingestas; las clasificaciones de activos descendientes aún no están declaradas ni sincronizadas.
+El inventario esperado en Explore es de cinco bases, nueve esquemas y veinticuatro tablas o vistas: las cuatro fuentes transaccionales aportan cuatro bases, cuatro esquemas y dieciocho tablas; Dremio añade la vista federada `Dremio.University_Lab.Student_360` más los espacios medallion `Silver`, `Gold_Rectoria`, `Gold_Decanatos` y `Gold_VR_Financiera` con cinco vistas de consumo ([ADR 0003](../adr/0003-dremio-medallion-audience-spaces.md)), catalogadas con `make metadata-dremio-sync`. Los owners y las descripciones de esos activos ya existen por las ingestas; las clasificaciones de activos descendientes aún no están declaradas ni sincronizadas.
 
 ## Entregable de la fase 5: verificación y punto de decisión
 
