@@ -24,6 +24,18 @@ _Evitar_: carpeta, directorio
 Conjunto identificable de datos con significado, procedencia y responsable definidos.
 _Evitar_: tabla suelta, archivo suelto
 
+**Métrica institucional**:
+Agregado definido con fórmula, fuente de verdad, owner, fecha de corte y granularidad aprobadas para apoyar una decisión institucional.
+_Evitar_: indicador sin fórmula, KPI calculado de manera implícita
+
+**Fecha de corte**:
+Instante hasta el cual se consideran los datos de una métrica o respuesta analítica.
+_Evitar_: dato al día sin evidencia, tiempo real asumido
+
+**Cobertura de integración**:
+Proporción o conteo agregado de registros que se enlazan entre fuentes aprobadas; no representa calidad, éxito académico ni completitud de negocio por sí sola.
+_Evitar_: indicador de desempeño, calidad total
+
 ## Descubrimiento y gobierno
 
 **Federación de datos**:

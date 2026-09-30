@@ -29,7 +29,7 @@ Una persona de Rectoría, Vicerrectoría o Decanato podrá:
 
 | Orden | Entregable | Contenido | Criterio de aceptación |
 | --- | --- | --- | --- |
-| 1 | Contrato de métricas | Catálogo de KPI, fórmula, owner, fuente, periodicidad, filtros y sensibilidad | Cada métrica de demo tiene una definición aprobada y una consulta Dremio reproducible |
+| 1 | Contrato de métricas | Catálogo de KPI, fórmula, owner, fuente, periodicidad, filtros y sensibilidad | Borrador [rectoral](metrics/rectoria-kpi-contract.md); cada métrica de demo debe tener una definición aprobada y una consulta Dremio reproducible |
 | 2 | Capa de consumo | Vistas Dremio de solo lectura para los KPI y sus agregaciones | Las consultas no exponen filas sensibles innecesarias y sus resultados se reconcilian con las fuentes |
 | 3 | Dashboards institucionales | Vistas para Rectoría, Vicerrectoría Académica, Vicerrectoría Financiera y Decanatos | Cada audiencia puede responder sus preguntas priorizadas sin SQL manual |
 | 4 | Corpus documental | Documentos sintéticos o autorizados en MinIO, con metadatos de origen y alcance | Cada documento recuperable conserva fuente, fecha y clasificación de servicio |
