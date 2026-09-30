@@ -13,7 +13,11 @@ Los entregables 4–6 añadieron activos de consumo que OpenMetadata no cubría:
 3. **Bucket documental:** se registra `Corpus_Storage` (Storage Service, tipo S3 con `awsConfig` y `endPointURL` hacia MinIO) y el contenedor `openrag_docs_corpus` (prefijo `corpus`).
 4. **Asistente IA:** OpenMetadata 1.3.1 no tiene tipo API Service; el asistente se documenta operativamente en [OPERATIONS.md](../../OPERATIONS.md) y se revisará su catalogación al actualizar OpenMetadata.
 
-Todo se ejecuta con `make metadata-consumption-sync` (bootstrap REST idempotente, mismo patrón del ADR 0001) y se verifica con el control `activos-consumo` de `make metadata-verify`.
+Todo se ejecuta con `make metadata-consumption-sync` (bootstrap REST idempotente, mismo patrón del ADR 0001) y se verifica con los controles `activos-consumo` y `lineage-consumo` de `make metadata-verify`.
+
+## Linage completo de la cadena de consumo
+
+El bootstrap publica además el lineage de extremo a extremo (27 aristas): fuentes transaccionales → Silver → Gold → dashboards Metabase, y contenedor documental → índice vectorial. Así el linaje cubre desde el dato transaccional hasta el consumo en dashboard y asistente, verificable navegando en OpenMetadata a profundidad 3 desde cualquier tablero. Las dos tablas nuevas del seed (`sis.academic_registrations`, `erp.registration_payments`) se gobiernan de forma declarativa mediante `spec.tables` en sus manifiestos, aplicado por `make metadata-apply`.
 
 ## Consecuencias
 

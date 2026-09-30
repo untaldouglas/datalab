@@ -92,7 +92,42 @@ def fetch_owner(api_url: str, token: str, name: str) -> dict[str, Any]:
     owner = request_json("GET", f"{api_url.rstrip('/')}/users/name/{quote(name, safe='')}", token)
     if not isinstance(owner, dict) or not isinstance(owner.get("id"), str):
         raise RuntimeError(f"No se encontró el owner de usuario declarado: {name}")
-    return {key: owner[key] for key in ("id", "type", "name") if key in owner}
+    # validateOwner de OM 1.3 requiere type explícito; la respuesta de /users puede omitirlo.
+    return {"id": owner["id"], "type": "user", "name": owner.get("name", name)}
+
+
+def build_table_operations(table: dict[str, Any], current: dict[str, Any], owner: dict[str, Any]) -> list[dict[str, Any]]:
+    operations: list[dict[str, Any]] = []
+    description = current.get("description")
+    if not isinstance(description, str) or not description.strip():
+        operations.append({"op": "add", "path": "/description", "value": table["description"]})
+    elif description != table["description"]:
+        operations.append({"op": "replace", "path": "/description", "value": table["description"]})
+    owner_ref = current.get("owner") if isinstance(current.get("owner"), dict) else {}
+    if not owner_ref.get("name"):
+        operations.append({"op": "add", "path": "/owner", "value": owner})
+    return operations
+
+
+def apply_table_governance(manifests: list[dict[str, Any]], api_url: str, token: str, owner_name: str) -> list[dict[str, str]]:
+    """Aplica owner y descripción declarados a las tablas de spec.tables."""
+    results: list[dict[str, str]] = []
+    owner = fetch_owner(api_url, token, owner_name)
+    for manifest in manifests:
+        service = manifest["spec"]["service"]["name"]
+        for table in manifest["spec"].get("tables", []):
+            fqn = f"{service}.{table['database']}.{table['schema']}.{table['name']}"
+            current = request_json("GET", f"{api_url.rstrip('/')}/tables/name/{quote(fqn)}", token, not_found_ok=True)
+            if current is None:
+                results.append({"service": fqn, "action": "NOT_FOUND", "detail": "tabla ausente en el catálogo; ejecute su ingesta de metadatos"})
+                continue
+            operations = build_table_operations(table, current, owner)
+            if not operations:
+                results.append({"service": fqn, "action": "NO_CHANGE", "detail": ""})
+                continue
+            request_json("PATCH", f"{api_url.rstrip('/')}/tables/{current['id']}", token, operations, "application/json-patch+json")
+            results.append({"service": fqn, "action": "UPDATED", "detail": ", ".join(operation["path"].removeprefix("/") for operation in operations)})
+    return results
 
 
 def apply_manifests(manifests: list[dict[str, Any]], api_url: str, token: str) -> list[dict[str, str]]:
@@ -118,6 +153,7 @@ def apply_manifests(manifests: list[dict[str, Any]], api_url: str, token: str) -
             raise RuntimeError(f"El servicio {name} no contiene id para aplicar el parche")
         request_json("PATCH", f"{api_url.rstrip('/')}/services/databaseServices/{identifier}", token, operations, "application/json-patch+json")
         results.append({"service": name, "action": "UPDATED", "detail": ", ".join(operation["path"].removeprefix("/") for operation in operations)})
+    results.extend(apply_table_governance(manifests, api_url, token, manifests[0]["metadata"]["owner"]))
     return results
 
 

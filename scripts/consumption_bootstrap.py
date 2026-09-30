@@ -9,6 +9,7 @@ OpenMetadata 1.3.1 (sin API Services); se documenta en el ADR 0004.
 """
 import datetime as dt
 import os
+import urllib.parse
 
 from dremio_openmetadata_sync import om_session, post_if_missing
 
@@ -97,6 +98,68 @@ def ensure_storage_service(om, api, owner):
     })
 
 
+ENTITY_ENDPOINTS = {"table": "tables", "dashboard": "dashboards", "searchIndex": "searchIndexes", "container": "containers"}
+
+
+def resolve_entity(om, api, entity_type, fqn):
+    """Resuelve una entidad por FQN (endpoint plural; /table/name es inválido)."""
+    endpoint = ENTITY_ENDPOINTS[entity_type]
+    response = om.get(f"{api}/{endpoint}/name/{urllib.parse.quote(fqn)}", timeout=30)
+    response.raise_for_status()
+    return response.json()
+
+
+def publish_edge(om, api, from_entity, to_entity):
+    return om.put(f"{api}/lineage", json={"edge": {
+        "fromEntity": {"id": from_entity["id"], "type": from_entity["type"]},
+        "toEntity": {"id": to_entity["id"], "type": to_entity["type"]},
+    }}, timeout=30)
+
+
+def ensure_lineage(om, api):
+    """Lineage completo: transaccional → Silver → Gold → dashboards; contenedor → índice."""
+    edges = [
+        # Silver ← transaccional
+        ("table", "SIS_MSSQL.sis_db.sis.students", "table", "Dremio_Federation.Dremio.Silver.Eligible_Student_Activity"),
+        ("table", "SIS_MSSQL.sis_db.sis.academic_registrations", "table", "Dremio_Federation.Dremio.Silver.Eligible_Student_Activity"),
+        ("table", "SIS_MSSQL.sis_db.sis.enrollments", "table", "Dremio_Federation.Dremio.Silver.Eligible_Student_Activity"),
+        ("table", "ERPNext_Postgres.erpnext_db.erp.registration_payments", "table", "Dremio_Federation.Dremio.Silver.Eligible_Student_Activity"),
+        ("table", "Dremio_Federation.Dremio.Silver.Eligible_Student_Activity", "table", "Dremio_Federation.Dremio.Silver.Academic_Activity_Events"),
+        ("table", "Moodle_Postgres.moodle_db.moodle.users", "table", "Dremio_Federation.Dremio.Silver.Academic_Activity_Events"),
+        ("table", "Moodle_Postgres.moodle_db.moodle.assignment_submissions", "table", "Dremio_Federation.Dremio.Silver.Academic_Activity_Events"),
+        ("table", "Moodle_Postgres.moodle_db.moodle.quiz_attempts", "table", "Dremio_Federation.Dremio.Silver.Academic_Activity_Events"),
+        ("table", "Moodle_Postgres.moodle_db.moodle.forum_posts", "table", "Dremio_Federation.Dremio.Silver.Academic_Activity_Events"),
+        # Gold ← Silver / transaccional
+        ("table", "Dremio_Federation.Dremio.Silver.Eligible_Student_Activity", "table", "Dremio_Federation.Dremio.Gold_Rectoria.Rectoral_Academic_Summary"),
+        ("table", "Dremio_Federation.Dremio.Silver.Academic_Activity_Events", "table", "Dremio_Federation.Dremio.Gold_Rectoria.Rectoral_Academic_Summary"),
+        ("table", "Dremio_Federation.Dremio.Silver.Demo_Reporting_Cutoff", "table", "Dremio_Federation.Dremio.Gold_Rectoria.Rectoral_Academic_Summary"),
+        ("table", "ERPNext_Postgres.erpnext_db.erp.student_invoices", "table", "Dremio_Federation.Dremio.Gold_Rectoria.Rectoral_Financial_Summary"),
+        ("table", "Dremio_Federation.Dremio.Silver.Demo_Reporting_Cutoff", "table", "Dremio_Federation.Dremio.Gold_Rectoria.Rectoral_Financial_Summary"),
+        ("table", "Dremio_Federation.Dremio.Silver.Eligible_Student_Activity", "table", "Dremio_Federation.Dremio.Gold_Decanatos.Decanato_Program_Participation"),
+        ("table", "Dremio_Federation.Dremio.Silver.Academic_Activity_Events", "table", "Dremio_Federation.Dremio.Gold_Decanatos.Decanato_Program_Participation"),
+        ("table", "Dremio_Federation.Dremio.Silver.Demo_Reporting_Cutoff", "table", "Dremio_Federation.Dremio.Gold_Decanatos.Decanato_Program_Participation"),
+        ("table", "ERPNext_Postgres.erpnext_db.erp.student_invoices", "table", "Dremio_Federation.Dremio.Gold_VR_Financiera.Financial_Collection_Summary"),
+        ("table", "Dremio_Federation.Dremio.Silver.Demo_Reporting_Cutoff", "table", "Dremio_Federation.Dremio.Gold_VR_Financiera.Financial_Collection_Summary"),
+        ("table", "ERPNext_Postgres.erpnext_db.erp.registration_payments", "table", "Dremio_Federation.Dremio.Gold_VR_Financiera.Monthly_Collection"),
+        ("table", "Dremio_Federation.Dremio.Silver.Demo_Reporting_Cutoff", "table", "Dremio_Federation.Dremio.Gold_VR_Financiera.Monthly_Collection"),
+        # Dashboards ← Gold
+        ("table", "Dremio_Federation.Dremio.Gold_Rectoria.Rectoral_Academic_Summary", "dashboard", "Metabase_Institutional.Tablero_Rectoria"),
+        ("table", "Dremio_Federation.Dremio.Gold_Rectoria.Rectoral_Financial_Summary", "dashboard", "Metabase_Institutional.Tablero_Rectoria"),
+        ("table", "Dremio_Federation.Dremio.Gold_Decanatos.Decanato_Program_Participation", "dashboard", "Metabase_Institutional.Tablero_Decanatos"),
+        ("table", "Dremio_Federation.Dremio.Gold_VR_Financiera.Financial_Collection_Summary", "dashboard", "Metabase_Institutional.Tablero_VR_Financiera"),
+        ("table", "Dremio_Federation.Dremio.Gold_VR_Financiera.Monthly_Collection", "dashboard", "Metabase_Institutional.Tablero_VR_Financiera"),
+        # Corpus: contenedor documental → índice vectorial
+        ("container", "Corpus_Storage.openrag_docs_corpus", "searchIndex", "Corpus_Search.corpus_chunks"),
+    ]
+    published = 0
+    for from_type, from_fqn, to_type, to_fqn in edges:
+        from_entity = resolve_entity(om, api, from_type, from_fqn)
+        to_entity = resolve_entity(om, api, to_type, to_fqn)
+        response = publish_edge(om, api, {**from_entity, "type": from_type}, {**to_entity, "type": to_type})
+        response.raise_for_status()
+        published += 1
+    print(f"Lineage publicado: {published} aristas (fuentes → medallion → consumo).")
+
 def main():
     om = om_session()
     api = os.environ["OPENMETADATA_API_URL"]
@@ -104,6 +167,7 @@ def main():
     ensure_dashboard_service(om, api, owner)
     ensure_search_service(om, api, owner)
     ensure_storage_service(om, api, owner)
+    ensure_lineage(om, api)
     print(f"Activos de consumo catalogados ({dt.date.today().isoformat()}).")
 
 

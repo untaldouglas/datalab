@@ -72,10 +72,10 @@ def verify_inventory(entities: dict[str, list[dict[str, Any]]]) -> list[dict[str
     governance = result("FAIL", "owner-y-descripción", ", ".join(incomplete)) if incomplete else result("PASS", "owner-y-descripción", f"{len(assets)} activos con owner y descripción")
     tables = _fqn_set(entities["tables"])
     expected_dremio = MEDALLION_VIEWS | {STUDENT_360}
-    if len(transaccionals) == 18 and expected_dremio <= tables:
-        table_status = result("PASS", "tablas-y-vistas", "18 tablas transaccionales, Student_360 y 8 vistas medallion")
+    if len(transaccionals) == 20 and expected_dremio <= tables:
+        table_status = result("PASS", "tablas-y-vistas", "20 tablas transaccionales, Student_360 y 8 vistas medallion")
     else:
-        table_status = result("FAIL", "tablas-y-vistas", f"se esperaban 18 tablas transaccionales, {STUDENT_360} y las vistas medallion; faltan: {_missing(expected_dremio, tables)}")
+        table_status = result("FAIL", "tablas-y-vistas", f"se esperaban 20 tablas transaccionales, {STUDENT_360} y las vistas medallion; faltan: {_missing(expected_dremio, tables)}")
     return [inventory, governance, table_status]
 
 
@@ -162,6 +162,23 @@ def verify_consumption(entities: dict[str, list[dict[str, Any]]]) -> dict[str, s
     return result("PASS", "activos-consumo", "3 tableros Metabase, índice corpus y bucket documental catalogados")
 
 
+def verify_consumption_lineage(api_url: str, token: str) -> dict[str, str]:
+    """Verifica que los dashboards y el índice corpus tengan lineage hacia su origen."""
+    checks = {
+        "Metabase_Institutional.Tablero_Rectoria": ("dashboard", "Dremio_Federation.Dremio.Gold_Rectoria.Rectoral_Academic_Summary"),
+        "Corpus_Search.corpus_chunks": ("searchIndex", "Corpus_Storage.openrag_docs_corpus"),
+    }
+    for fqn, (endpoint, expected_upstream) in checks.items():
+        try:
+            payload = get_json(f"{api_url.rstrip('/')}/lineage/{endpoint}/name/{quote(fqn, safe='')}?upstreamDepth=1&downstreamDepth=0", token)
+        except RuntimeError:
+            return result("FAIL", "lineage-consumo", f"no se pudo consultar lineage de {fqn}")
+        nodes = {node.get("fullyQualifiedName") for node in payload.get("nodes", []) if isinstance(node, dict)}
+        if expected_upstream not in nodes:
+            return result("FAIL", "lineage-consumo", f"{fqn} no tiene como origen {expected_upstream}")
+    return result("PASS", "lineage-consumo", "tableros ligados a Gold y corpus ligado al bucket documental")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--api-url", default=os.environ.get("OPENMETADATA_API_URL", DEFAULT_API_URL))
@@ -176,6 +193,7 @@ def main(argv: list[str] | None = None) -> int:
         entities = {"services": fetch_entities(args.api_url, args.token, "services/databaseServices"), "databases": fetch_entities(args.api_url, args.token, "databases"), "schemas": fetch_entities(args.api_url, args.token, "databaseSchemas"), "tables": fetch_entities(args.api_url, args.token, "tables"), **{endpoint: fetch_entities(args.api_url, args.token, endpoint) for endpoint, _ in CONSUMPTION_ENDPOINTS}}
         checks = verify_inventory(entities)
         checks.append(verify_consumption(entities))
+        checks.append(verify_consumption_lineage(args.api_url, args.token))
         dags = fetch_airflow_dags(args.airflow_url, args.airflow_username, args.airflow_password)
         checks.append(verify_airflow(dags, fetch_airflow_states(args.airflow_url, args.airflow_username, args.airflow_password, METADATA_DAGS | PROFILER_DAGS | {"Dremio_Federation_lineage", "Dremio_Federation_usage"} | {dag for dag in dags if dag.endswith("_dq")})))
         lineage = get_json(f"{args.api_url.rstrip('/')}/lineage/table/name/{quote(STUDENT_360, safe='')}?upstreamDepth=1&downstreamDepth=0", args.token)

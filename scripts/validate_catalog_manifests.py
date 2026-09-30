@@ -18,7 +18,8 @@ FORBIDDEN_KEY = re.compile(
 )
 ALLOWED = {
     "metadata": {"name", "owner", "description"},
-    "spec": {"environment", "service", "access", "ingestion", "governance"},
+    "spec": {"environment", "service", "access", "ingestion", "governance", "tables"},
+    "tables": {"database", "schema", "name", "description"},
     "service": {"name", "type", "database", "includeSchemas"},
     "access": {"credentialsRef", "mode"},
     "ingestion": {"metadata", "profiler", "quality"},
