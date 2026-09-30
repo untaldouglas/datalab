@@ -64,6 +64,10 @@ _Evitar_: facultad, programa formativo
 Oferta académica vigente perteneciente a una facultad.
 _Evitar_: facultad, curso aislado
 
+**Servicio formativo**:
+Curso u oferta cursable asociado a un programa formativo vigente.
+_Evitar_: factura, matrícula, facultad
+
 ## Descubrimiento y gobierno
 
 **Federación de datos**:

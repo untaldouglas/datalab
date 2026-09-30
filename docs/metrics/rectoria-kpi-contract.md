@@ -32,7 +32,15 @@ El alcance usa únicamente datos sintéticos de la POC. No determina desempeño 
 1. **Regla de estudiante elegible:** aprobada como pago de matrícula más servicio formativo vigente. La POC requiere aún vincular explícitamente el pago, el servicio y el semestre: `student_invoices` contiene estado y monto de factura, pero no representa por sí solo el pago de matrícula de un servicio vigente.
 2. **Definición de participación:** aprobada como al menos una entrega enviada, un quiz finalizado o una publicación propia de estudiante durante las cuatro semanas anteriores a la fecha de corte. No cuentan `draft`, `missing` ni actividad docente.
 3. **Semestre académico y corte financiero:** aprobado para pregrado: impar de enero a julio y par de agosto a diciembre. La facturación se asigna por `invoice_date`; saldos y vencimientos se calculan a la fecha de corte. Cuando exista una tabla de pagos, los cobros se asignarán por su fecha real de pago. La capa Dremio deberá mapear fechas y el valor actual `academic_term` a esta regla.
-4. **Organización académica:** aprobada la jerarquía Facultad → Programa Formativo, con Decanato como responsabilidad de la Facultad. El dataset sintético expone `academic_program`; se debe añadir o mapear la Facultad antes de usar el filtro de Decanato.
+4. **Organización académica:** aprobada la jerarquía Facultad → Programa Formativo → Servicio Formativo, con Decanato como responsabilidad de la Facultad. Para la demo se aprueba el siguiente mapeo sintético:
+
+   | Facultad | Programa formativo | Servicios formativos |
+   | --- | --- | --- |
+   | Ingeniería | Ingeniería | `DAT-101` Fundamentos de Datos; `DAT-220` Analítica Aplicada |
+   | Administración | Administración | `ADM-210` Gestión Financiera |
+   | Economía | Economía | `ECO-115` Economía Digital |
+
+   La vista de consumo agregará la Facultad a partir de ese mapeo. Rectoría podrá filtrar por Facultad y Programa; cada Decanato recibirá una vista limitada a su Facultad.
 5. **Umbrales y alertas:** se proponen abajo para aprobación. La primera demo no etiquetará personas como “en riesgo”.
 
 ## Ejemplo de participación académica

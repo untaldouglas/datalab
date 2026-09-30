@@ -48,6 +48,8 @@ Una persona de Rectoría, Vicerrectoría o Decanato podrá:
 
 Las métricas de riesgo, retención o desempeño institucional no se mostrarán como hechos hasta que su fórmula y fuente de verdad hayan sido aprobadas. La POC puede presentar indicadores operativos y académicos observables, no inferencias automatizadas sobre personas.
 
+Para la demo, el mapeo sintético de organización académica se mantiene en el [contrato de métricas rectorales](metrics/rectoria-kpi-contract.md): Facultad de Ingeniería → Ingeniería → `DAT-101`/`DAT-220`; Facultad de Administración → Administración → `ADM-210`; Facultad de Economía → Economía → `ECO-115`.
+
 ## Arquitectura de consumo
 
 ```text
