@@ -29,6 +29,9 @@ MEDALLION_VIEWS = {
     "Dremio_Federation.Dremio.Silver.Demo_Reporting_Cutoff",
     "Dremio_Federation.Dremio.Gold_Rectoria.Rectoral_Academic_Summary",
     "Dremio_Federation.Dremio.Gold_Rectoria.Rectoral_Financial_Summary",
+    "Dremio_Federation.Dremio.Gold_Decanatos.Decanato_Program_Participation",
+    "Dremio_Federation.Dremio.Gold_VR_Financiera.Financial_Collection_Summary",
+    "Dremio_Federation.Dremio.Gold_VR_Financiera.Monthly_Collection",
 }
 LINEAGE_UPSTREAM = {"SIS_MSSQL.sis_db.sis.students", "SIS_MSSQL.sis_db.sis.enrollments", "Moodle_Postgres.moodle_db.moodle.users", "ERPNext_Postgres.erpnext_db.erp.student_invoices"}
 METADATA_DAGS = {f"{service}_metadata" for service in ("Moodle_Postgres", "ERP_MSSQL", "SIS_MSSQL", "ERPNext_Postgres")}
@@ -62,7 +65,7 @@ def verify_inventory(entities: dict[str, list[dict[str, Any]]]) -> list[dict[str
     tables = _fqn_set(entities["tables"])
     expected_dremio = MEDALLION_VIEWS | {STUDENT_360}
     if len(transaccionals) == 18 and expected_dremio <= tables:
-        table_status = result("PASS", "tablas-y-vistas", "18 tablas transaccionales, Student_360 y 5 vistas medallion")
+        table_status = result("PASS", "tablas-y-vistas", "18 tablas transaccionales, Student_360 y 8 vistas medallion")
     else:
         table_status = result("FAIL", "tablas-y-vistas", f"se esperaban 18 tablas transaccionales, {STUDENT_360} y las vistas medallion; faltan: {_missing(expected_dremio, tables)}")
     return [inventory, governance, table_status]

@@ -102,6 +102,53 @@ GROUP BY CASE WHEN EXTRACT(MONTH FROM invoice.invoice_date) BETWEEN 1 AND 7
        THEN CONCAT(CAST(EXTRACT(YEAR FROM invoice.invoice_date) AS VARCHAR), '-01')
        ELSE CONCAT(CAST(EXTRACT(YEAR FROM invoice.invoice_date) AS VARCHAR), '-02') END,
   cutoff.reporting_cutoff, invoice.payment_status''',
+    "Gold_Decanatos.Decanato_Program_Participation": '''CREATE OR REPLACE VIEW "Gold_Decanatos"."Decanato_Program_Participation" AS
+SELECT eligible.faculty, eligible.academic_program, eligible.academic_term,
+  cutoff.reporting_cutoff,
+  COUNT(DISTINCT eligible.student_id) AS eligible_students,
+  COUNT(DISTINCT participation.student_id) AS participating_students,
+  COUNT(DISTINCT eligible.student_id) - COUNT(DISTINCT participation.student_id) AS eligible_without_recent_activity,
+  CAST(100.0 * COUNT(DISTINCT participation.student_id) / NULLIF(COUNT(DISTINCT eligible.student_id), 0) AS DECIMAL(5,2)) AS participation_pct
+FROM "Silver"."Eligible_Student_Activity" eligible
+CROSS JOIN "Silver"."Demo_Reporting_Cutoff" cutoff
+LEFT JOIN (
+  SELECT DISTINCT event.student_id, event.academic_term, event.course_code
+  FROM "Silver"."Academic_Activity_Events" event
+  CROSS JOIN "Silver"."Demo_Reporting_Cutoff" cutoff
+  WHERE event.event_date > DATE_SUB(cutoff.reporting_cutoff, 28) AND event.event_date <= cutoff.reporting_cutoff
+) participation ON participation.student_id = eligible.student_id
+  AND participation.academic_term = eligible.academic_term
+  AND participation.course_code = eligible.course_code
+GROUP BY eligible.faculty, eligible.academic_program, eligible.academic_term, cutoff.reporting_cutoff''',
+    "Gold_VR_Financiera.Financial_Collection_Summary": '''CREATE OR REPLACE VIEW "Gold_VR_Financiera"."Financial_Collection_Summary" AS
+SELECT
+  CASE WHEN EXTRACT(MONTH FROM invoice.invoice_date) BETWEEN 1 AND 7
+       THEN CONCAT(CAST(EXTRACT(YEAR FROM invoice.invoice_date) AS VARCHAR), '-01')
+       ELSE CONCAT(CAST(EXTRACT(YEAR FROM invoice.invoice_date) AS VARCHAR), '-02') END AS academic_semester,
+  cutoff.reporting_cutoff,
+  COUNT(*) AS invoices,
+  SUM(invoice.total_amount) AS billed_amount,
+  SUM(invoice.paid_amount) AS paid_amount,
+  SUM(invoice.total_amount - invoice.paid_amount) AS outstanding_amount,
+  CAST(100.0 * SUM(invoice.paid_amount) / NULLIF(SUM(invoice.total_amount), 0) AS DECIMAL(5,2)) AS collection_pct
+FROM "ERPNext_Postgres".erp.student_invoices invoice
+CROSS JOIN "Silver"."Demo_Reporting_Cutoff" cutoff
+WHERE invoice.invoice_date <= cutoff.reporting_cutoff
+GROUP BY CASE WHEN EXTRACT(MONTH FROM invoice.invoice_date) BETWEEN 1 AND 7
+       THEN CONCAT(CAST(EXTRACT(YEAR FROM invoice.invoice_date) AS VARCHAR), '-01')
+       ELSE CONCAT(CAST(EXTRACT(YEAR FROM invoice.invoice_date) AS VARCHAR), '-02') END,
+  cutoff.reporting_cutoff''',
+    "Gold_VR_Financiera.Monthly_Collection": '''CREATE OR REPLACE VIEW "Gold_VR_Financiera"."Monthly_Collection" AS
+SELECT DATE_TRUNC('month', payment.paid_at) AS collection_month,
+  cutoff.reporting_cutoff,
+  COUNT(*) AS payments,
+  SUM(payment.amount) AS collected_amount
+FROM "ERPNext_Postgres".erp.registration_payments payment
+CROSS JOIN "Silver"."Demo_Reporting_Cutoff" cutoff
+WHERE payment.payment_status IN ('paid', 'partial')
+  AND payment.paid_at IS NOT NULL
+  AND payment.paid_at <= cutoff.reporting_cutoff
+GROUP BY DATE_TRUNC('month', payment.paid_at), cutoff.reporting_cutoff''',
 }
 
 
@@ -125,8 +172,8 @@ def submit_and_wait(session, host, sql):
 def create_space_if_missing(session, host, name):
     """Crea un space de Dremio; lo considera exitoso si ya existe."""
     response = session.post(f"{host}/api/v3/catalog", json={"entityType": "space", "name": name}, timeout=15)
-    if response.status_code in {200, 201}:
-        print(f"Space {name} creado.")
+    if response.status_code in {200, 201, 409}:
+        print(f"Space {name} creado o ya existe.")
         return
     existing = session.get(f"{host}/api/v3/catalog/by-name/{urllib.parse.quote(name)}", timeout=15)
     if existing.status_code == 200:
