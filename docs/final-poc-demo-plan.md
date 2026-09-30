@@ -31,10 +31,11 @@ Una persona de Rectoría, Vicerrectoría o Decanato podrá:
 | --- | --- | --- | --- |
 | 1 | Contrato de métricas | Catálogo de KPI, fórmula, owner, fuente, periodicidad, filtros y sensibilidad | Borrador [rectoral](metrics/rectoria-kpi-contract.md); cada métrica de demo debe tener una definición aprobada y una consulta Dremio reproducible |
 | 2 | Capa de consumo | Vistas Dremio de solo lectura para los KPI y sus agregaciones | Las consultas no exponen filas sensibles innecesarias y sus resultados se reconcilian con las fuentes |
-| 3 | Dashboards institucionales | Vistas para Rectoría, Vicerrectoría Académica, Vicerrectoría Financiera y Decanatos | Cada audiencia puede responder sus preguntas priorizadas sin SQL manual |
-| 4 | Corpus documental | Documentos sintéticos o autorizados en MinIO, con metadatos de origen y alcance | Cada documento recuperable conserva fuente, fecha y clasificación de servicio |
-| 5 | Asistente IA | Flujo Langflow y punto de entrada Hermes con herramientas separadas para SQL y documentos | Responde preguntas aprobadas, cita fuentes y rechaza solicitudes fuera de alcance |
-| 6 | Guion de demo | Recorrido de principio a fin, datos de preparación, roles y evidencia | Una persona no técnica completa el recorrido sin intervención del equipo técnico |
+| 3 | Control de acceso de consumo | Identidad no administrativa con `SELECT` sólo sobre resúmenes agregados | La identidad no puede consultar capas internas ni fuentes transaccionales |
+| 4 | Dashboards institucionales | Vistas para Rectoría, Vicerrectoría Académica, Vicerrectoría Financiera y Decanatos | Cada audiencia puede responder sus preguntas priorizadas sin SQL manual |
+| 5 | Corpus documental | Documentos sintéticos o autorizados en MinIO, con metadatos de origen y alcance | Cada documento recuperable conserva fuente, fecha y clasificación de servicio |
+| 6 | Asistente IA | Flujo Langflow y punto de entrada Hermes con herramientas separadas para SQL y documentos | Responde preguntas aprobadas, cita fuentes y rechaza solicitudes fuera de alcance |
+| 7 | Guion de demo | Recorrido de principio a fin, datos de preparación, roles y evidencia | Una persona no técnica completa el recorrido sin intervención del equipo técnico |
 
 ## Audiencias y preguntas prioritarias
 
@@ -86,6 +87,7 @@ Antes de cada demostración se ejecutará `make check` y `make metadata-verify`.
 | BI | Herramienta de dashboard compatible con el stack y la audiencia | Se preparan consultas/vistas, pero no se publica una visualización final |
 | Documentos | Corpus sintético o documentos explícitamente autorizados | La ruta documental del agente no se habilita |
 | IA | Preguntas permitidas, formato de citas y criterio de rechazo | El asistente permanece en modo demostración técnica, sin usuarios finales |
+| Acceso de consumo | Dremio Enterprise/Cloud con RBAC o gateway de consultas permitido | No se conectan dashboards ni agentes; se conservan vistas y pruebas técnicas |
 | Clasificación descendiente | Herencia, clasificación por activo o modelo híbrido | Se mantiene como `OUT_OF_SCOPE`; no bloquea dashboards agregados ni el asistente con vistas aprobadas |
 
 ## Criterios de cierre
@@ -101,4 +103,4 @@ La POC se considera cerrada cuando se demuestran, ante las audiencias definidas:
 
 ## Estado actual
 
-La plataforma base, el catálogo, la calidad mínima, Dremio y la verificación del catálogo están completados. El siguiente gate es aprobar el contrato de métricas y seleccionar la herramienta de dashboard; después se implementan las capas de consumo y el guion final de demo.
+La plataforma base, el catálogo, la calidad mínima, Dremio y la verificación del catálogo están completados. El contrato rectoral y las primeras vistas agregadas están implementados y reconciliados. La POC usa Dremio OSS, cuya instancia local no expone grants por vista verificables; el [ADR 0002](adr/0002-dremio-oss-consumer-access-gate.md) bloquea conexiones de dashboard y agentes hasta decidir Enterprise/Cloud o un gateway. Mientras tanto puede avanzarse con catalogar las vistas, preparar el corpus documental y seleccionar la herramienta BI.
