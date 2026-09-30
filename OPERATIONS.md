@@ -82,6 +82,15 @@ make corpus-search QUERY='¿qué habilita el pago parcial?'   # búsqueda vector
 - La carga es idempotente: recrea el índice y resube los objetos en cada ejecución.
 - El asistente (entregable 6) debe recuperar fragmentos con su cita: documento, título, fecha y clasificación; si no hay evidencia suficiente, lo declara.
 
+## Asistente IA (entregable 6)
+
+`make assistant` inicia el punto de entrada del asistente en `http://localhost:8093` (sólo localhost). Expone exactamente dos herramientas y nada más:
+
+- `GET /api/v1/assistant/structured?metric=academic|financial[&filtros]`: delega en el gateway de métricas aprobadas; no acepta SQL ni consulta Dremio directamente.
+- `GET /api/v1/assistant/document?q=<pregunta>`: búsqueda vectorial sobre el corpus; responde con fragmentos citados (documento, título, fuente, fecha, clasificación, excerpt) o con `evidence: insufficient` cuando ningún fragmento supera el umbral (0.60).
+
+Toda otra ruta devuelve 404. Consultas y rechazos se auditan como eventos JSON (`assistant_structured`, `assistant_document`, `assistant_rejected`, `assistant_failed`) en `make logs SERVICES=assistant`. El umbral de evidencia está fijado en `assistant/assistant_api.py` (`MIN_SCORE`).
+
 ## Datos persistentes
 
 `make down` preserva los volúmenes Docker. La eliminación de volúmenes borra bases de datos, objetos y metadatos; no se automatiza mediante Make para evitar pérdida accidental de datos.
