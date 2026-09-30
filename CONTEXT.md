@@ -45,8 +45,12 @@ Proporción o conteo agregado de registros que se enlazan entre fuentes aprobada
 _Evitar_: indicador de desempeño, calidad total
 
 **Estudiante elegible**:
-Estudiante que ha pagado la matrícula de un servicio formativo vigente y, por tanto, está habilitado para cursarlo.
+Estudiante con matrícula vigente y pago de matrícula `paid` o `partial`; el estado `partial` habilita temporalmente mientras la matrícula permanezca vigente a la fecha de corte.
 _Evitar_: usuario creado, estudiante registrado sin pago de matrícula
+
+**Elegibilidad temporal**:
+Habilitación para cursar concedida a un estudiante con pago de matrícula parcial y matrícula vigente a la fecha de corte.
+_Evitar_: pago definitivo, matrícula pagada en su totalidad
 
 **Semestre académico**:
 Periodo institucional de pregrado: el semestre impar va de enero a julio y el semestre par va de agosto a diciembre.

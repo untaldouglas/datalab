@@ -29,7 +29,7 @@ El alcance usa únicamente datos sintéticos de la POC. No determina desempeño 
 
 ## Decisiones que requieren aprobación
 
-1. **Regla de estudiante elegible:** aprobada como pago de matrícula más servicio formativo vigente. La POC requiere aún vincular explícitamente el pago, el servicio y el semestre: `student_invoices` contiene estado y monto de factura, pero no representa por sí solo el pago de matrícula de un servicio vigente.
+1. **Regla de estudiante elegible:** aprobada como matrícula vigente más pago de matrícula `paid` o `partial`. El estado `partial` concede elegibilidad temporal mientras la matrícula esté vigente a la fecha de corte. `pending`, `overdue` y `cancelled` no conceden elegibilidad. La POC requiere aún vincular explícitamente el pago, el servicio y el semestre: `student_invoices` contiene estado y monto de factura, pero no representa por sí solo el pago de matrícula de un servicio vigente.
 2. **Definición de participación:** aprobada como al menos una entrega enviada, un quiz finalizado o una publicación propia de estudiante durante las cuatro semanas anteriores a la fecha de corte. No cuentan `draft`, `missing` ni actividad docente.
 3. **Semestre académico y corte financiero:** aprobado para pregrado: impar de enero a julio y par de agosto a diciembre. La facturación se asigna por `invoice_date`; saldos y vencimientos se calculan a la fecha de corte. Cuando exista una tabla de pagos, los cobros se asignarán por su fecha real de pago. La capa Dremio deberá mapear fechas y el valor actual `academic_term` a esta regla.
 4. **Organización académica:** aprobada la jerarquía Facultad → Programa Formativo → Servicio Formativo, con Decanato como responsabilidad de la Facultad. Para la demo se aprueba el siguiente mapeo sintético:
@@ -70,5 +70,7 @@ Los umbrales iniciales deben aprobarlos los owners. Para la demo se pueden prese
 Las respuestas deben explicar que la POC opera con agregados sintéticos y que esas solicitudes requieren una política, autorización y modelo de métrica distintos.
 
 ## Siguiente entrega tras aprobación
+
+Antes de las vistas se añadirá el modelo sintético `academic_registrations` en SIS y `registration_payments` en ERPNext. Una matrícula `vigente` con pago `paid` o `partial` permitirá cursar los servicios formativos activos asociados; `partial` se identificará como elegibilidad temporal. La fecha de fin de gracia no se inventará para la POC: antes de producción debe ser definida por la política financiera.
 
 Por cada métrica aprobada se creará una vista Dremio con nombre, SQL, campos de filtro, prueba de reconciliación y referencia a su owner. El tablero rectoral usará esas vistas; Langflow/Hermes sólo podrá consultar el mismo conjunto aprobado.
