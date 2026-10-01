@@ -30,7 +30,7 @@ class CatalogVerificationTest(unittest.TestCase):
 
     def test_operational_checks_accept_erpnext_dq_and_lineage_nodes(self):
         dags = {"Moodle_Postgres_metadata", "ERP_MSSQL_metadata", "SIS_MSSQL_metadata", "ERPNext_Postgres_metadata", "Moodle_Postgres_profiler", "ERP_MSSQL_profiler", "SIS_MSSQL_profiler", "ERPNext_Postgres_profiler", "Dremio_Federation_lineage", "Dremio_Federation_usage"}
-        dags.update({f"source_{index}_dq" for index in range(18)})
+        dags.update({f"source_{index}_dq" for index in range(20)})
         lineage = {"nodes": [{"fullyQualifiedName": name} for name in ("SIS_MSSQL.sis_db.sis.students", "SIS_MSSQL.sis_db.sis.enrollments", "Moodle_Postgres.moodle_db.moodle.users", "ERPNext_Postgres.erpnext_db.erp.student_invoices")]}
 
         self.assertEqual("PASS", verify_airflow(dags, {dag: "success" for dag in dags})["status"])

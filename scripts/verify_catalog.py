@@ -136,14 +136,14 @@ def verify_airflow(dags: set[str], states: dict[str, str | None] | None = None) 
     expected = METADATA_DAGS | PROFILER_DAGS | {"Dremio_Federation_lineage", "Dremio_Federation_usage"}
     dq_dags = {dag for dag in dags if dag.endswith("_dq")}
     missing = expected - dags
-    if missing or len(dq_dags) != 18:
-        detail = (f"faltan: {', '.join(sorted(missing))}; " if missing else "") + f"DAGs DQ encontrados: {len(dq_dags)}/18"
+    if missing or len(dq_dags) != 20:
+        detail = (f"faltan: {', '.join(sorted(missing))}; " if missing else "") + f"DAGs DQ encontrados: {len(dq_dags)}/20"
         return result("FAIL", "DAGs", detail)
     if states is not None:
         failed = sorted(dag for dag in expected | dq_dags if states.get(dag) != "success")
         if failed:
             return result("FAIL", "DAGs", f"última ejecución no exitosa: {', '.join(failed)}")
-    return result("PASS", "DAGs", "4 metadata, 4 profiler, 18 DQ y 2 Dremio")
+    return result("PASS", "DAGs", "4 metadata, 4 profiler, 20 DQ y 2 Dremio")
 
 
 def verify_lineage(payload: dict[str, Any]) -> dict[str, str]:

@@ -65,13 +65,15 @@ El catálogo transaccional se opera en tres etapas diarias y todas se ejecutan e
 | --- | --- | --- | --- |
 | Ingesta de metadatos | 4 servicios, 18 tablas | Uno por servicio | 02:00–02:15, escalonado cada 5 minutos |
 | Profiler | 4 servicios, 18 tablas | `*_profiler`, uno por servicio | 03:00–03:15, escalonado cada 5 minutos |
-| Data Quality | 18 tablas | `*_dq`, uno por tabla | 04:00 |
+| Data Quality | 20 tablas | `*_dq`, uno por tabla | 04:00 |
 
 Los cuatro pipelines de perfilado son `Moodle_Postgres_profiler`, `ERP_MSSQL_profiler`, `SIS_MSSQL_profiler` y `ERPNext_Postgres_profiler`. Calculan métricas y no generan datos de muestra (`generateSampleData: false`); esta última decisión evita exponer registros académicos o financieros en el catálogo.
 
-Cada una de las 18 tablas tiene un Test Suite ejecutable y el control inicial `row_count_positive`. El control usa la definición `tableRowCountToBeBetween` con `minValue: 1`: detecta una fuente o carga inesperadamente vacía. No constituye una regla de negocio completa; antes de usar alertas operativas se deben añadir umbrales, unicidad, completitud y reglas de dominio acordadas con el responsable del activo.
+Cada una de las 20 tablas tiene un Test Suite ejecutable y el control inicial `row_count_positive`. El control usa la definición `tableRowCountToBeBetween` con `minValue: 1`: detecta una fuente o carga inesperadamente vacía. No constituye una regla de negocio completa; antes de usar alertas operativas se deben añadir umbrales, unicidad, completitud y reglas de dominio acordadas con el responsable del activo.
 
-La primera ejecución manual de los 4 profiler y de los 18 pipelines de Data Quality finalizó en `success`. Para validar una reimplementación desde la interfaz: abre una tabla, confirma el owner y la descripción, entra en **Profiler & Data Quality**, verifica `row_count_positive`, y abre el pipeline `*_dq` correspondiente en **Ingestions** para consultar su última ejecución.
+Las 18 suites originales se crearon desde la interfaz; las dos tablas incorporadas al gobierno declarativo (`sis.academic_registrations` y `erp.registration_payments`) se materializan con `make metadata-apply` desde `spec.tables` y `quality.initialTests`: crea la suite ejecutable (PUT `/dataQuality/testSuites/executable`), el caso `row_count_positive` y el pipeline `TestSuite` con su despliegue en Airflow (POST `/deploy/{id}`), de forma idempotente.
+
+La primera ejecución manual de los 4 profiler y de los 20 pipelines de Data Quality finalizó en `success`. Para validar una reimplementación desde la interfaz: abre una tabla, confirma el owner y la descripción, entra en **Profiler & Data Quality**, verifica `row_count_positive`, y abre el pipeline `*_dq` correspondiente en **Ingestions** para consultar su última ejecución.
 
 ## Responsabilidad y descripciones
 

@@ -61,6 +61,14 @@ make metadata-verify       # valida inventario, DAGs y lineage
 
 `make demo-views` es idempotente: recrear una vista ya catalogada conserva owner y descripción en OpenMetadata; si una vista cambia de nombre o de espacio, elimina manualmente el activo obsoleto en OpenMetadata antes del sync.
 
+`make metadata-verify` y `make metadata-apply` exigen credenciales sólo en el entorno de ejecución. El token JWT de `ingestion-bot` se obtiene del PostgreSQL local (los contenedores no lo exponen como variable):
+
+```bash
+export OPENMETADATA_JWT_TOKEN=$(docker exec poc-postgres psql -U postgres -d openmetadata_db -t -A \
+  -c "SELECT json #>> '{authenticationMechanism,config,JWTToken}' FROM user_entity WHERE name='ingestion-bot'")
+export AIRFLOW_USERNAME=admin AIRFLOW_PASSWORD=admin   # credenciales de desarrollo de Airflow
+```
+
 ## Gateway de métricas
 
 El servicio `metrics-gateway` lleva el código embebido en la imagen (no monta volumen): después de editar `gateway/app.py` ejecuta `make gateway` para reconstruir y recrear el contenedor. Valida siempre `http://localhost:8092/api/v1/metrics/academic?sql=SELECT%201` → HTTP 400 y `/health` → ok.

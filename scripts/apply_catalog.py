@@ -20,6 +20,10 @@ except ModuleNotFoundError:  # Ejecutado directamente desde scripts/.
 
 
 CLASSIFICATION = "UniversityClassification"
+ROW_COUNT_TEST_CASE = "row_count_positive"
+ROW_COUNT_TEST_DEFINITION = "tableRowCountToBeBetween"
+ROW_COUNT_CASE_DESCRIPTION = "Verifica que la tabla tenga al menos un registro para detectar una carga o fuente vacía inesperada."
+SUITE_DESCRIPTION = "Controles de calidad operativos declarados en el manifiesto de la fuente."
 CLASSIFICATION_DESCRIPTION = "Clasificación de sensibilidad para los activos de la plataforma de datos universitaria."
 TAG_DESCRIPTIONS = {
     "internal": "Datos de uso interno de la plataforma universitaria.",
@@ -130,9 +134,97 @@ def apply_table_governance(manifests: list[dict[str, Any]], api_url: str, token:
     return results
 
 
+def quality_tables(manifests: list[dict[str, Any]]) -> list[tuple[dict[str, Any], dict[str, Any], dict[str, Any]]]:
+    """Pares (manifiesto, servicio, tabla) con calidad habilitada y control de fila declarado."""
+    pairs: list[tuple[dict[str, Any], dict[str, Any], dict[str, Any]]] = []
+    for manifest in manifests:
+        ingestion = manifest["spec"].get("ingestion", {})
+        quality = ingestion.get("quality") if isinstance(ingestion, dict) else None
+        if not isinstance(quality, dict) or not quality.get("enabled"):
+            continue
+        if ROW_COUNT_TEST_CASE not in (quality.get("initialTests") or []):
+            continue
+        service = manifest["spec"]["service"]
+        for table in manifest["spec"].get("tables", []):
+            pairs.append((manifest, service, table))
+    return pairs
+
+
+def ensure_quality_control(manifests: list[dict[str, Any]], api_url: str, token: str, services: dict[str, dict[str, Any]]) -> list[dict[str, str]]:
+    """Materializa suite ejecutable, caso de prueba y pipeline de calidad declarados."""
+    base = api_url.rstrip("/")
+    results: list[dict[str, str]] = []
+    # OM 1.3 no soporta el filtro por servicio en ingestionPipelines; se lista una vez y se filtra en Python.
+    pipelines_by_service: dict[str, set[str]] = {}
+    for pipeline in request_json("GET", f"{base}/services/ingestionPipelines?limit=200", token).get("data", []):
+        service = pipeline.get("service")
+        if isinstance(pipeline.get("name"), str) and isinstance(service, dict) and isinstance(service.get("name"), str):
+            pipelines_by_service.setdefault(service["name"], set()).add(pipeline["name"])
+    for manifest, service_spec, table in quality_tables(manifests):
+        service_name = service_spec["name"]
+        service = services.get(service_name)
+        if service is None or not isinstance(service.get("id"), str):
+            results.append({"service": service_name, "action": "BLOCKED", "detail": f"tabla {table['name']} sin servicio de catálogo"})
+            continue
+        fqn = f"{service_name}.{table['database']}.{table['schema']}.{table['name']}"
+        suite_fqn = f"{fqn}.testSuite"
+        suite = request_json("GET", f"{base}/dataQuality/testSuites/name/{quote(suite_fqn, safe='')}", token, not_found_ok=True)
+        if suite is None:
+            # OM 1.3 crea suites ejecutables vía PUT /executable; el FQN lo deriva el servidor.
+            suite = request_json("PUT", f"{base}/dataQuality/testSuites/executable", token, {
+                "name": f"{fqn}.TestSuite",
+                "description": SUITE_DESCRIPTION,
+                "executableEntityReference": fqn,
+            })
+        case_fqn = f"{fqn}.{ROW_COUNT_TEST_CASE}"
+        case = request_json("GET", f"{base}/dataQuality/testCases/name/{quote(case_fqn, safe='')}", token, not_found_ok=True)
+        if case is None:
+            request_json("POST", f"{base}/dataQuality/testCases", token, {
+                "name": ROW_COUNT_TEST_CASE,
+                "description": ROW_COUNT_CASE_DESCRIPTION,
+                "testSuite": suite_fqn,
+                "entityLink": f"<#E::table::{fqn}>",
+                "testDefinition": ROW_COUNT_TEST_DEFINITION,
+                "parameterValues": [{"name": "minValue", "value": "1"}],
+            })
+        pipeline_name = f"{service_name}_{table['name']}_dq"
+        pipeline_names = pipelines_by_service.get(service_name, set())
+        actions: list[str] = []
+        if pipeline_name not in pipeline_names:
+            schedule = manifest["spec"]["ingestion"]["quality"].get("schedule", "0 4 * * *")
+            timezone = manifest["spec"]["ingestion"]["quality"].get("timezone", "America/El_Salvador")
+            pipeline = request_json("POST", f"{base}/services/ingestionPipelines", token, {
+                "name": pipeline_name,
+                "displayName": pipeline_name,
+                "pipelineType": "TestSuite",
+                "sourceConfig": {"config": {"type": "TestSuite", "entityFullyQualifiedName": fqn}},
+                "airflowConfig": {
+                    "scheduleInterval": schedule,
+                    "pipelineTimezone": timezone,
+                    "concurrency": 1,
+                    "retries": 1,
+                    "retryDelay": 300,
+                    "pipelineCatchup": False,
+                    "pausePipeline": False,
+                },
+                "service": {"type": "databaseService", "id": service["id"]},
+            })
+            pipeline_id = pipeline.get("id") if isinstance(pipeline, dict) else None
+            if isinstance(pipeline_id, str):
+                # OM 1.3 despliega el DAG en Airflow sólo vía POST /deploy/{id}.
+                request_json("POST", f"{base}/services/ingestionPipelines/deploy/{pipeline_id}", token)
+            actions.append("calidad creada")
+        results.append({"service": pipeline_name, "action": "UPDATED" if actions else "NO_CHANGE", "detail": ", ".join(actions)})
+    return results
+
+
 def apply_manifests(manifests: list[dict[str, Any]], api_url: str, token: str) -> list[dict[str, str]]:
     ensure_governance_tags(api_url, token)
-    services = {service.get("name"): service for service in fetch_database_services(api_url, token) if isinstance(service.get("name"), str)}
+    services: dict[str, dict[str, Any]] = {}
+    for service in fetch_database_services(api_url, token):
+        name = service.get("name")
+        if isinstance(name, str):
+            services[name] = service
     results: list[dict[str, str]] = []
     for manifest in manifests:
         name = manifest["spec"]["service"]["name"]
@@ -154,6 +246,7 @@ def apply_manifests(manifests: list[dict[str, Any]], api_url: str, token: str) -
         request_json("PATCH", f"{api_url.rstrip('/')}/services/databaseServices/{identifier}", token, operations, "application/json-patch+json")
         results.append({"service": name, "action": "UPDATED", "detail": ", ".join(operation["path"].removeprefix("/") for operation in operations)})
     results.extend(apply_table_governance(manifests, api_url, token, manifests[0]["metadata"]["owner"]))
+    results.extend(ensure_quality_control(manifests, api_url, token, services))
     return results
 
 

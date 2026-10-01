@@ -63,7 +63,7 @@ Abrir http://localhost:8585 (admin), Explore:
 
 - Los espacios `Gold_Rectoria`, `Gold_Decanatos`, `Gold_VR_Financiera` con owner y descripción por audiencia.
 - La vista `Student_360` con su **lineage** hacia las 4 fuentes aprobadas.
-- Un control `row_count_positive` de las 18 tablas transaccionales.
+- Un control `row_count_positive` de las 20 tablas transaccionales.
 
 Mensaje: *el catálogo aporta contexto —quién es responsable, de dónde viene cada dato—; los permisos viven en el gateway.*
 
